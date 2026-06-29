@@ -2,7 +2,7 @@ const CACHE_NAME = "kasirku-cache-v1";
 const ASSETS_TO_CACHE = [
   "./",
   "index.html",
-  "app.js",
+  "main.js",
   "style.css",
   "manifest.json",
   "app_logo.png"
