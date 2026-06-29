@@ -5327,6 +5327,168 @@ window.openSidebar = openSidebar;
 window.closeSidebar = closeSidebar;
 window.toggleMobileCartView = toggleMobileCartView;
 
+// --- Real Camera Barcode Scanner ---
+let html5QrScannerInstance = null;
+let camerasList = [];
+let activeCameraIndex = 0;
+
+function startCameraScan() {
+    sfx.playBeep();
+    const modal = document.getElementById("modal-barcode-scanner");
+    if (modal) modal.classList.add("active");
+
+    const statusEl = document.getElementById("barcode-scanner-status");
+    if (statusEl) statusEl.textContent = "Meminta izin kamera...";
+
+    // Cleanup previous instance if any
+    if (html5QrScannerInstance) {
+        html5QrScannerInstance.clear();
+        html5QrScannerInstance = null;
+    }
+
+    // Initialize scanner
+    html5QrScannerInstance = new Html5Qrcode("barcode-scanner-reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+            camerasList = devices;
+            // Use last camera by default (usually rear/back camera on phones)
+            activeCameraIndex = devices.length - 1;
+            const targetCameraId = devices[activeCameraIndex].id;
+            
+            startScannerWithCamera(targetCameraId);
+        } else {
+            if (statusEl) statusEl.textContent = "Kamera tidak ditemukan.";
+            sfx.playError();
+        }
+    }).catch(err => {
+        console.error("Gagal mendapatkan daftar kamera:", err);
+        if (statusEl) statusEl.textContent = "Izin kamera ditolak atau terblokir.";
+        sfx.playError();
+    });
+}
+
+function startScannerWithCamera(cameraId) {
+    const statusEl = document.getElementById("barcode-scanner-status");
+    if (statusEl) statusEl.textContent = "Kamera aktif - Arahkan ke Barcode...";
+
+    // Set high-performance barcode scanning configuration
+    const config = {
+        fps: 15,
+        qrbox: { width: 260, height: 160 } // Rectangular box optimized for traditional horizontal barcodes
+    };
+
+    html5QrScannerInstance.start(
+        cameraId,
+        config,
+        (decodedText, decodedResult) => {
+            // Success handler
+            handleScannedBarcode(decodedText);
+        },
+        (errorMessage) => {
+            // Silence camera frame read errors to prevent spamming logs
+        }
+    ).catch(err => {
+        console.error("Gagal mengaktifkan kamera scanner:", err);
+        if (statusEl) statusEl.textContent = "Gagal memulai kamera scanner.";
+    });
+}
+
+function handleScannedBarcode(barcodeText) {
+    sfx.playSuccess();
+    stopCameraScan();
+
+    // Look up scanned barcode in product database
+    const matchingProduct = products.find(p => p.barcode === barcodeText || p.sku === barcodeText);
+
+    if (matchingProduct) {
+        if (matchingProduct.stock <= 0) {
+            sfx.playError();
+            alert(`Produk ${matchingProduct.name} sedang habis stok!`);
+            return;
+        }
+        
+        addToCart(matchingProduct.id);
+
+        // Show success notification toast
+        const toast = document.createElement("div");
+        toast.style.position = "fixed";
+        toast.style.bottom = "24px";
+        toast.style.right = "24px";
+        toast.style.background = "var(--success-gradient)";
+        toast.style.color = "white";
+        toast.style.padding = "12px 24px";
+        toast.style.borderRadius = "var(--border-radius-md)";
+        toast.style.boxShadow = "var(--card-shadow)";
+        toast.style.zIndex = "9999";
+        toast.style.display = "flex";
+        toast.style.alignItems = "center";
+        toast.style.gap = "8px";
+        toast.style.fontSize = "14px";
+        toast.style.fontWeight = "600";
+        toast.innerHTML = `<i data-lucide="check-circle"></i><span>Terimbas: ${matchingProduct.name}</span>`;
+        
+        document.body.appendChild(toast);
+        lucide.createIcons();
+        
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transition = "opacity 0.5s ease";
+            setTimeout(() => toast.remove(), 500);
+        }, 2500);
+    } else {
+        sfx.playError();
+        // If not found, check if we are currently on inventory page. If yes, fill barcode field!
+        if (activePage === "inventory") {
+            const barcodeInput = document.getElementById("prod-sku");
+            if (barcodeInput) {
+                barcodeInput.value = barcodeText;
+                alert(`Barcode [${barcodeText}] tidak terdaftar. Nilai telah diisi ke form input barcode produk.`);
+                return;
+            }
+        }
+        alert(`Barcode [${barcodeText}] tidak ditemukan dalam database produk.`);
+    }
+}
+
+function stopCameraScan() {
+    const modal = document.getElementById("modal-barcode-scanner");
+    if (modal) modal.classList.remove("active");
+
+    if (html5QrScannerInstance) {
+        html5QrScannerInstance.stop().then(() => {
+            console.log("[Scanner] Camera stream stopped.");
+            html5QrScannerInstance.clear();
+            html5QrScannerInstance = null;
+        }).catch(err => {
+            console.error("Gagal menghentikan aliran kamera:", err);
+            html5QrScannerInstance = null;
+        });
+    }
+}
+
+function switchScannerCamera() {
+    if (camerasList.length <= 1 || !html5QrScannerInstance) {
+        sfx.playBeep();
+        return;
+    }
+
+    sfx.playBeep();
+    activeCameraIndex = (activeCameraIndex + 1) % camerasList.length;
+    const newCameraId = camerasList[activeCameraIndex].id;
+
+    // Stop current scanning, then restart
+    html5QrScannerInstance.stop().then(() => {
+        startScannerWithCamera(newCameraId);
+    }).catch(err => {
+        console.error("Gagal mematikan kamera saat ganti:", err);
+    });
+}
+
+window.startCameraScan = startCameraScan;
+window.stopCameraScan = stopCameraScan;
+window.switchScannerCamera = switchScannerCamera;
+
 // --- App Initialization ---
 window.addEventListener("DOMContentLoaded", () => {
     loadDatabase();
