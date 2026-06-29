@@ -657,6 +657,11 @@ function updateHeldOrdersCountBadge() {
 function navigateToPage(pageName) {
     activePage = pageName;
     
+    // Auto collapse sidebar drawer on mobile
+    if (typeof closeSidebar === "function") {
+        closeSidebar();
+    }
+    
     // Toggle active classes on sidebar
     navItems.forEach(item => {
         if (item.getAttribute("data-page") === pageName) {
@@ -921,6 +926,11 @@ function updateCartUI() {
         `;
         if (cartCountBadge) cartCountBadge.textContent = "0";
         if (activeCountBadge) activeCountBadge.textContent = "0";
+        
+        const mobileCartFooter = document.getElementById("mobile-cart-footer");
+        if (mobileCartFooter) mobileCartFooter.style.display = "none";
+        toggleMobileCartView(false);
+
         const sumSubtotal = document.getElementById("sum-subtotal");
         if (sumSubtotal) sumSubtotal.textContent = formatPrice(0);
         
@@ -1117,6 +1127,22 @@ function updateCartUI() {
     }
     
     document.getElementById("sum-total").textContent = formatPrice(roundedTotal);
+    
+    // Update mobile cart sticky footer elements
+    const mobileCartFooter = document.getElementById("mobile-cart-footer");
+    const mobileCartQty = document.getElementById("mobile-cart-qty");
+    const mobileCartSum = document.getElementById("mobile-cart-sum");
+
+    if (mobileCartFooter) {
+        if (totalItems > 0) {
+            mobileCartFooter.style.display = "block";
+            if (mobileCartQty) mobileCartQty.textContent = totalItems;
+            if (mobileCartSum) mobileCartSum.textContent = formatPrice(roundedTotal);
+        } else {
+            mobileCartFooter.style.display = "none";
+            toggleMobileCartView(false);
+        }
+    }
     
     lucide.createIcons();
 }
@@ -5270,6 +5296,36 @@ window.switchPpobBalanceTab = switchPpobBalanceTab;
 window.handlePpobBalanceAdjust = handlePpobBalanceAdjust;
 window.handlePpobBalanceTransfer = handlePpobBalanceTransfer;
 window.parsePpobProofText = parsePpobProofText;
+
+// --- Mobile Layout Helpers ---
+function openSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    if (sidebar) sidebar.classList.add("active");
+    if (backdrop) backdrop.classList.add("active");
+}
+
+function closeSidebar() {
+    const sidebar = document.querySelector(".sidebar");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    if (sidebar) sidebar.classList.remove("active");
+    if (backdrop) backdrop.classList.remove("active");
+}
+
+function toggleMobileCartView(showCart) {
+    const cashierLayout = document.querySelector(".cashier-layout");
+    if (cashierLayout) {
+        if (showCart) {
+            cashierLayout.classList.add("cart-active");
+        } else {
+            cashierLayout.classList.remove("cart-active");
+        }
+    }
+}
+
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
+window.toggleMobileCartView = toggleMobileCartView;
 
 // --- App Initialization ---
 window.addEventListener("DOMContentLoaded", () => {

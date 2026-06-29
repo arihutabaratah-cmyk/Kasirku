@@ -2243,92 +2243,311 @@ textarea {
 
 /* Mobile Screens (max-width: 600px) */
 @media (max-width: 600px) {
-    .app-container {
-        flex-direction: column-reverse;
-        /* Navigation at bottom */
+    /* Hide desktop top utility bar */
+    .top-utility-bar {
+        display: none !important;
     }
 
-    .sidebar {
-        width: 100vw;
-        height: 64px;
-        border-right: none;
-        border-top: 1px solid var(--border-color);
-        flex-direction: row;
-        padding: 4px 16px;
+    /* Mobile top header styling */
+    .mobile-top-header {
+        display: flex !important;
         justify-content: space-between;
         align-items: center;
+        height: 56px;
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0 16px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
     }
 
-    .sidebar-header {
-        display: none;
-        /* Hide logo on mobile bottom navigation */
+    .mobile-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 18px;
     }
 
-    .sidebar-nav {
-        flex-direction: row;
-        width: 100%;
-        justify-content: space-around;
-        gap: 0;
-    }
-
-    .nav-item {
-        flex-direction: column;
-        gap: 4px;
-        padding: 8px;
-        font-size: 10px;
+    .logo-icon-sm {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        border-radius: var(--border-radius-sm);
+        display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: var(--border-radius-sm);
+        color: white;
     }
 
-    .nav-item i {
+    .logo-icon-sm i {
         width: 18px;
         height: 18px;
     }
 
+    .mobile-menu-toggle-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-color);
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    /* Sidebar Drawer Navigation */
+    .app-container {
+        flex-direction: row;
+        display: block; /* Disable flex wrapper on mobile to allow natural height flow */
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px; /* Hide offscreen */
+        width: 260px;
+        height: 100vh;
+        z-index: 1000;
+        background: var(--bg-color);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-right: 1px solid var(--border-color);
+        flex-direction: column;
+        padding: 20px 16px;
+        display: flex !important;
+        border-top: none;
+        border-radius: 0 20px 20px 0;
+    }
+
+    .sidebar.active {
+        left: 0; /* Slide into view */
+    }
+
+    .sidebar-header {
+        display: flex !important;
+        margin-bottom: 24px;
+    }
+
+    .sidebar-nav {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .nav-item {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 12px 16px;
+        font-size: 14px;
+        gap: 12px;
+        width: 100%;
+        border-radius: var(--border-radius-sm);
+    }
+
+    .nav-item i {
+        width: 20px;
+        height: 20px;
+    }
+
     .nav-item span {
-        display: block;
-        /* Show text on mobile but small */
-        font-size: 9px;
+        display: block !important;
+        font-size: 14px;
     }
 
     .sidebar-footer {
+        display: flex !important;
+        margin-top: auto;
+        border-top: 1px solid var(--border-color);
+        padding-top: 16px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .store-info-badge {
+        padding: 0;
+        background: transparent;
+        border: none;
+    }
+
+    .store-meta {
+        display: block !important;
+    }
+
+    /* Backdrop styling */
+    .sidebar-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 999;
         display: none;
-        /* Hide profile and theme toggle or place elsewhere */
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
 
+    .sidebar-backdrop.active {
+        display: block !important;
+        opacity: 1;
+    }
+
+    /* Main Workspace height adjustment */
     .main-content {
-        height: calc(100vh - 64px);
+        width: 100vw;
+        height: calc(100vh - 56px);
         padding: 12px;
+        overflow-y: auto;
     }
 
+    /* Cashier Layout (Dual-View) */
     .cashier-layout {
-        height: calc(100vh - 88px);
-        gap: 12px;
+        display: block;
+        height: auto;
     }
 
-    .panel-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
+    .catalog-panel {
+        display: block;
+        width: 100%;
     }
 
-    .header-actions {
+    /* When cart view is active, toggle panels */
+    .cashier-layout.cart-active .catalog-panel {
+        display: none;
+    }
+
+    .cashier-layout.cart-active .cart-panel {
+        display: block;
+    }
+
+    .cart-panel {
+        display: none; /* Hidden by default on mobile unless cart-active */
+        width: 100%;
+        max-height: none;
+        height: auto;
+        border-left: none;
+        background: transparent;
+        padding: 0;
+    }
+
+    /* Mobile Back Button */
+    .mobile-back-to-catalog {
+        display: block !important;
+    }
+
+    /* Sticky Cart Footer */
+    .mobile-cart-footer {
+        position: fixed;
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        z-index: 90;
+        display: block !important;
+    }
+
+    .mobile-cart-btn {
+        width: 100%;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        border: none;
+        border-radius: var(--border-radius-md);
+        padding: 14px 20px;
+        color: white;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        font-size: 15px;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        cursor: pointer;
+        transition: transform 0.2s ease, filter 0.2s ease;
     }
 
+    .mobile-cart-btn:active {
+        transform: scale(0.98);
+    }
+
+    .mobile-cart-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mobile-cart-total-price {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Modal bottom-sheet transitions on mobile */
+    .modal-dialog {
+        margin: 0 !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-width: 100% !important;
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+        z-index: 1010;
+    }
+
+    .modal.active .modal-dialog {
+        transform: translateY(0);
+    }
+
+    .modal-content {
+        border-radius: 20px 20px 0 0;
+        border: none;
+        border-top: 1px solid var(--border-color);
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+
+    /* Catalog grid card sizes */
+    .catalog-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+        gap: 12px;
+        padding-bottom: 80px; /* Space for sticky cart footer */
+    }
+
+    .product-card {
+        padding: 10px;
+    }
+
+    .product-img {
+        height: 90px;
+    }
+
+    .product-info h3 {
+        font-size: 13px;
+    }
+
+    .product-info .price {
+        font-size: 12px;
+    }
+
+    /* Cart details lists stack */
     .cart-actions {
         grid-template-columns: 1fr;
-        /* Stack actions on mobile */
     }
 
     .checkout-split {
         grid-template-columns: 1fr;
     }
 
+    /* CRM and History grids */
     .metrics-grid {
         grid-template-columns: 1fr 1fr;
+        gap: 10px;
     }
 
     .form-row {
@@ -2339,6 +2558,20 @@ textarea {
     .form-row .col-6 {
         width: 100%;
     }
+}
+
+/* --- MOBILE UI DEFAULT HIDDEN --- */
+.mobile-top-header {
+    display: none;
+}
+.mobile-back-to-catalog {
+    display: none;
+}
+.mobile-cart-footer {
+    display: none;
+}
+.sidebar-backdrop {
+    display: none;
 }
 
 /* --- TOP UTILITY BAR --- */

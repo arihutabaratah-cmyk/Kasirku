@@ -20,6 +20,27 @@
     <link rel="apple-touch-icon" href="app_logo.png">
 </head>
 <body class="dark-theme">
+    <!-- Mobile Top Header -->
+    <header class="mobile-top-header">
+        <button class="mobile-menu-toggle-btn" id="mobile-menu-btn" onclick="openSidebar()">
+            <i data-lucide="menu"></i>
+        </button>
+        <div class="mobile-logo">
+            <div class="logo-icon-sm">
+                <i data-lucide="store"></i>
+            </div>
+            <span>kasir<span class="logo-accent">Ku</span></span>
+        </div>
+        <div class="mobile-header-right">
+            <button class="mobile-theme-btn" onclick="document.getElementById('theme-toggle').click()" title="Ubah Tema" style="background:transparent; border:none; color:var(--text-color); width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                <i data-lucide="moon" class="moon-icon" style="width:20px; height:20px;"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Sidebar Drawer Backdrop -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
@@ -156,10 +177,31 @@
                         <div class="catalog-grid" id="catalog-grid">
                             <!-- Dynamically loaded products -->
                         </div>
+
+                        <!-- Mobile Cart Footer (Sticky Button) -->
+                        <div class="mobile-cart-footer" id="mobile-cart-footer" style="display: none;" onclick="toggleMobileCartView(true)">
+                            <button class="mobile-cart-btn">
+                                <div class="mobile-cart-info">
+                                    <i data-lucide="shopping-cart"></i>
+                                    <span><span id="mobile-cart-qty">0</span> Item</span>
+                                </div>
+                                <div class="mobile-cart-total-price">
+                                    <span id="mobile-cart-sum">Rp 0</span>
+                                    <i data-lucide="arrow-right"></i>
+                                </div>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Right: Cart & Summary -->
-                    <div class="cart-panel">
+                    <div class="cart-panel" id="cart-panel">
+                        <!-- Mobile Back to Catalog Button -->
+                        <div class="mobile-back-to-catalog" id="mobile-back-to-catalog">
+                            <button class="btn btn-secondary-outline" id="mobile-back-btn" onclick="toggleMobileCartView(false)" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; height: 42px; border-radius: var(--border-radius-sm);">
+                                <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+                                <span>Kembali ke Katalog</span>
+                            </button>
+                        </div>
                         <!-- System Tabs Header -->
                         <div class="cart-tabs-header">
                             <button type="button" class="cart-tab-btn active" id="btn-tab-cart">
