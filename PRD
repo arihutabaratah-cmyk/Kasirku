@@ -1,0 +1,953 @@
+# 📋 Product Requirements Document (PRD)
+# **KasirKu — Aplikasi Point of Sale (POS) Modern**
+
+---
+
+| Field | Detail |
+|:---|:---|
+| **Nama Produk** | KasirKu |
+| **Versi Dokumen** | 1.0 |
+| **Tanggal** | 28 Juni 2026 |
+| **Tipe Aplikasi** | Web Application (Progressive Web App) |
+| **Target Platform** | Desktop Browser, Tablet, Mobile (Android & iOS via PWA) |
+| **Tech Stack** | Next.js (Frontend), Node.js (Backend API), PostgreSQL (Database) |
+| **Status** | Draft — Menunggu Review |
+
+---
+
+## 1. Ringkasan Eksekutif
+
+**KasirKu** adalah aplikasi Point of Sale (POS) modern berbasis web yang dirancang khusus untuk pelaku UMKM di Indonesia. Aplikasi ini menyediakan solusi lengkap mulai dari pencatatan transaksi, manajemen inventaris, CRM pelanggan, laporan keuangan real-time, hingga manajemen multi-cabang — semua dalam satu platform yang intuitif dan responsif.
+
+### 1.1 Visi Produk
+> Menjadi platform POS #1 di Indonesia yang membantu UMKM bertransformasi digital dengan solusi kasir yang mudah, cepat, dan terjangkau.
+
+### 1.2 Masalah yang Diselesaikan
+
+| # | Pain Point | Solusi KasirKu |
+|:--|:---|:---|
+| 1 | Pencatatan transaksi manual rentan kesalahan | Sistem POS otomatis dengan kalkulasi real-time |
+| 2 | Sulit melacak stok barang | Manajemen inventaris real-time dengan notifikasi stok rendah |
+| 3 | Tidak ada visibilitas performa bisnis | Dashboard analitik & laporan otomatis (harian, mingguan, bulanan) |
+| 4 | Manajemen pelanggan tersebar | CRM terintegrasi dengan riwayat transaksi & program loyalitas |
+| 5 | Kehilangan data saat perangkat rusak | Cloud-based storage dengan sinkronisasi otomatis |
+| 6 | Sulit kelola banyak cabang/karyawan | Multi-outlet & role-based access control |
+| 7 | Terbatas pada satu metode pembayaran | Dukungan multi-payment (tunai, QRIS, e-wallet, kartu) |
+
+---
+
+## 2. Target Pengguna & Persona
+
+### 2.1 Segmentasi Pengguna
+
+| Segmen | Contoh Usaha | Kebutuhan Utama |
+|:---|:---|:---|
+| **F&B / Kuliner** | Restoran, kafe, warung makan, food truck | Manajemen meja, kitchen display, modifier menu |
+| **Retail / Toko** | Minimarket, toko kelontong, toko fashion | Barcode scanner, manajemen stok, varian produk |
+| **Jasa** | Barbershop, salon, laundry, bengkel | Appointment, layanan custom, durasi layanan |
+| **Online Shop** | Toko online, reseller | Integrasi marketplace, manajemen pesanan |
+
+### 2.2 Persona Utama
+
+#### 👤 Persona 1: Rina — Pemilik Kedai Kopi
+- **Usia:** 28 tahun
+- **Lokasi:** Jakarta
+- **Bisnis:** Kedai kopi dengan 2 cabang, 8 karyawan
+- **Pain Points:** Kesulitan memantau 2 cabang sekaligus, stok bahan baku sering tidak terkontrol, laporan keuangan masih manual
+- **Goals:** Memantau semua cabang dari satu dashboard, otomatisasi laporan, program loyalitas pelanggan
+- **Tech Savviness:** Menengah
+
+#### 👤 Persona 2: Budi — Pemilik Minimarket
+- **Usia:** 42 tahun
+- **Lokasi:** Surabaya
+- **Bisnis:** 1 minimarket, 3 karyawan
+- **Pain Points:** Stok barang sering tidak akurat, kasir sering salah hitung kembalian, tidak tahu produk mana yang paling laku
+- **Goals:** Sistem kasir cepat dengan barcode, laporan stok otomatis, analitik produk terlaris
+- **Tech Savviness:** Rendah-Menengah
+
+#### 👤 Persona 3: Sari — Manager Restoran
+- **Usia:** 35 tahun
+- **Lokasi:** Bandung
+- **Bisnis:** Restoran keluarga, 15 karyawan, 20 meja
+- **Pain Points:** Pesanan sering tertukar, antrian panjang di jam ramai, sulit hitung tip dan service charge
+- **Goals:** Order management per meja, kitchen display system, split bill
+- **Tech Savviness:** Menengah-Tinggi
+
+---
+
+## 3. Arsitektur Sistem
+
+### 3.1 High-Level Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        A["Web App - PWA"]
+        B["Mobile Browser"]
+        C["Printer / Hardware"]
+    end
+
+    subgraph "API Gateway"
+        D["Next.js API Routes"]
+    end
+
+    subgraph "Service Layer"
+        E["Auth Service"]
+        F["POS Service"]
+        G["Inventory Service"]
+        H["Report Service"]
+        I["CRM Service"]
+        J["Payment Service"]
+        K["Notification Service"]
+    end
+
+    subgraph "Data Layer"
+        L[("PostgreSQL")]
+        M["Redis Cache"]
+        N["Cloud Storage"]
+    end
+
+    subgraph "External Services"
+        O["Payment Gateway"]
+        P["WhatsApp API"]
+        Q["Email Service"]
+    end
+
+    A & B --> D
+    D --> E & F & G & H & I & J & K
+    E & F & G & H & I & J --> L
+    F & G --> M
+    H --> N
+    J --> O
+    K --> P & Q
+    A --> C
+```
+
+### 3.2 Tech Stack Detail
+
+| Layer | Teknologi | Justifikasi |
+|:---|:---|:---|
+| **Frontend** | Next.js 14+ (App Router) | SSR/SSG, performa optimal, PWA support |
+| **UI Framework** | React + Vanilla CSS | Kontrol penuh atas desain, performa ringan |
+| **State Management** | Zustand | Lightweight, simple API |
+| **Backend API** | Next.js API Routes + tRPC | Type-safe, full-stack integration |
+| **Database** | PostgreSQL | ACID compliance, relational data, scalable |
+| **ORM** | Prisma | Type-safe queries, migration support |
+| **Cache** | Redis | Session management, real-time data |
+| **Auth** | NextAuth.js | Multi-provider, secure session |
+| **File Storage** | Cloudinary / S3 | Gambar produk, logo, receipt |
+| **Realtime** | WebSocket (Socket.io) | Kitchen display, notifikasi stok |
+| **Payment** | Midtrans / Xendit | QRIS, e-wallet, VA, kartu kredit |
+| **Offline** | Service Worker + IndexedDB | Transaksi tanpa internet |
+| **Deployment** | Vercel + Railway | Auto-scaling, CI/CD |
+
+---
+
+## 4. Fitur & Spesifikasi Fungsional
+
+### 4.1 Modul 1: Autentikasi & Otorisasi
+
+> [!IMPORTANT]
+> Sistem role-based access control (RBAC) adalah fondasi keamanan seluruh aplikasi.
+
+#### 4.1.1 Registrasi & Login
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Register akun bisnis | Daftar dengan email/no. HP, nama bisnis, jenis usaha | P0 |
+| Login email/password | Login standar dengan hashing bcrypt | P0 |
+| Login PIN cepat | PIN 4-6 digit untuk akses kasir harian (setelah login awal) | P0 |
+| Login Google/SSO | OAuth2 via Google | P1 |
+| Lupa password | Reset via email/SMS OTP | P0 |
+| 2FA (Two-Factor Auth) | OTP via email/SMS untuk akun owner | P1 |
+
+#### 4.1.2 Role & Permission
+
+| Role | Deskripsi | Permissions |
+|:---|:---|:---|
+| **Owner** | Pemilik bisnis | Full access semua fitur & data |
+| **Admin** | Manager/supervisor | Manajemen produk, stok, laporan, karyawan (kecuali billing) |
+| **Kasir** | Staff kasir | Transaksi POS, lihat stok, retur sederhana |
+| **Dapur/Kitchen** | Staff dapur | Lihat & update status pesanan |
+| **Viewer** | Investor/partner | Read-only akses ke laporan & dashboard |
+
+**User Stories:**
+- *Sebagai Owner*, saya ingin mengatur hak akses karyawan agar tidak semua orang bisa mengubah harga produk.
+- *Sebagai Kasir*, saya ingin login cepat dengan PIN tanpa harus mengetik email setiap kali shift dimulai.
+- *Sebagai Admin*, saya ingin menambah/menghapus karyawan tanpa mengganggu operasional kasir.
+
+---
+
+### 4.2 Modul 2: Point of Sale (Kasir)
+
+> [!TIP]
+> Modul ini adalah inti aplikasi — harus dioptimasi untuk kecepatan dan kemudahan penggunaan di jam-jam sibuk.
+
+#### 4.2.1 Antarmuka Kasir
+
+```
++---------------------------------------------------------------------+
+| Search Produk       | Kategori: [Semua] [Makanan] [Minuman] [Snack]  |
++------------+---------+------------+----------+----------------------+
+|            |         |            |          |                      |
+|  Kopi      |  Cake   |  Jus       |  Pizza   |  ... (grid produk)   |
+|  Rp 25.000 | Rp 35k  |  Rp 20.000 | Rp 45k   |                      |
+|            |         |            |          |                      |
++------------+---------+------------+----------+----------------------+
+|                                                                      |
+|  KERANJANG BELANJA                       |  Subtotal:  Rp 125.000   |
+|  -----------------------------------    |  Diskon:    - Rp 5.000   |
+|  1x Kopi Latte ........... Rp 25.000    |  Pajak 10%: Rp 12.000    |
+|  2x Cheese Cake .......... Rp 70.000    |  ----------------------  |
+|  1x Orange Juice ......... Rp 20.000    |  TOTAL:    Rp 132.000    |
+|  1x Margherita ........... Rp 45.000    |                           |
+|                                          |  [BAYAR SEKARANG]        |
+|  Pelanggan: Rina (+62812xxxx) [Hapus]   |  [Tahan Pesanan]         |
+|  Catatan: Extra cheese on pizza          |  [Batal]                 |
++------------------------------------------+--------------------------+
+```
+
+#### 4.2.2 Fitur Detail POS
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Quick search produk | Cari berdasarkan nama, SKU, atau barcode | P0 |
+| Grid/list view produk | Tampilan grid dengan gambar atau list compact | P0 |
+| Kategori & filter | Filter produk berdasarkan kategori | P0 |
+| Tambah ke keranjang | Klik/tap produk untuk tambah ke cart | P0 |
+| Edit qty di keranjang | Tombol +/- dan input manual qty | P0 |
+| Varian & modifier | Pilih ukuran (S/M/L), topping, level pedas, dll | P0 |
+| Diskon per item | Diskon persen atau nominal per produk | P0 |
+| Diskon per transaksi | Diskon keseluruhan transaksi | P0 |
+| Pajak otomatis | Kalkulasi PPN/service charge otomatis | P0 |
+| Catatan pesanan | Catatan khusus per item atau per transaksi | P1 |
+| Hold / tahan pesanan | Simpan pesanan sementara & lanjutkan nanti | P0 |
+| Multi-cart / tab | Buka beberapa keranjang sekaligus (kasir 1, kasir 2) | P1 |
+| Barcode scanner | Scan barcode/QR via kamera atau hardware scanner | P0 |
+| Custom product | Tambah produk custom (bukan dari katalog) dengan harga manual | P1 |
+| Shortcut keyboard | Hotkeys untuk kasir desktop (F1-F12, Enter, Esc) | P2 |
+| Tampilan landscape | Optimasi tampilan untuk tablet/desktop landscape | P0 |
+
+#### 4.2.3 Proses Pembayaran
+
+```mermaid
+flowchart LR
+    A["Keranjang Siap"] --> B{"Pilih Metode Bayar"}
+    B --> C["Tunai"]
+    B --> D["QRIS"]
+    B --> E["E-Wallet"]
+    B --> F["Kartu Debit/Kredit"]
+    B --> G["Transfer Bank"]
+    B --> H["Split Payment"]
+    
+    C --> I["Input Nominal Bayar"]
+    I --> J["Hitung Kembalian"]
+    
+    D --> K["Generate QR Code"]
+    K --> L["Scan dan Verifikasi"]
+    
+    H --> M["Pilih 2+ Metode"]
+    M --> N["Input Nominal per Metode"]
+    
+    J & L & E & F & G & N --> O["Transaksi Selesai"]
+    O --> P["Cetak/Kirim Struk"]
+    O --> Q["Update Stok"]
+    O --> R["Update Laporan"]
+```
+
+| Fitur Pembayaran | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Tunai | Input uang diterima, hitung kembalian otomatis, quick amount buttons (Rp 50k, Rp 100k, uang pas) | P0 |
+| QRIS | Generate QR code dinamis, auto-detect pembayaran | P0 |
+| E-Wallet | GoPay, OVO, DANA, ShopeePay, LinkAja | P1 |
+| Kartu Debit/Kredit | Via payment terminal atau manual entry | P1 |
+| Transfer Bank | Input referensi transfer, verifikasi manual/otomatis | P1 |
+| Split Payment | Bayar sebagian tunai, sebagian digital | P1 |
+| Kasbon / Hutang | Catat transaksi hutang pelanggan | P2 |
+| Uang muka / DP | Terima pembayaran sebagian | P2 |
+
+#### 4.2.4 Struk / Receipt
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Cetak struk thermal | Support printer 58mm & 80mm via USB/Bluetooth | P0 |
+| Struk digital | Kirim via WhatsApp / SMS / Email | P0 |
+| Custom template struk | Logo, header, footer, pesan promo di struk | P1 |
+| Cetak ulang struk | Cetak ulang dari riwayat transaksi | P0 |
+| QR Code di struk | Link ke feedback form atau promo | P2 |
+
+---
+
+### 4.3 Modul 3: Manajemen Produk & Inventaris
+
+#### 4.3.1 Manajemen Produk
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| CRUD produk | Tambah, edit, hapus, arsipkan produk | P0 |
+| Gambar produk | Upload foto produk (max 5 per produk) | P0 |
+| Kategori & sub-kategori | Organisasi produk hierarchical | P0 |
+| SKU otomatis | Generate SKU unik otomatis atau input manual | P0 |
+| Barcode | Generate & cetak barcode/QR code produk | P1 |
+| Varian produk | Ukuran, warna, rasa, dll. dengan stok terpisah per varian | P0 |
+| Modifier / Add-on | Topping, extra shot, level pedas, dll. dengan harga tambahan | P0 |
+| Harga bertingkat | Harga grosir, harga member, harga promo | P1 |
+| Produk komposit / bundle | Paket hemat, combo meal | P1 |
+| Import/export produk | Bulk upload via CSV/Excel | P1 |
+| Produk favorit | Tandai produk sebagai favorit untuk akses cepat di kasir | P0 |
+| Unit satuan | Pcs, kg, liter, porsi, jam, dll. | P0 |
+
+#### 4.3.2 Manajemen Stok / Inventaris
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Stok real-time | Update otomatis saat transaksi | P0 |
+| Stok minimum alert | Notifikasi saat stok di bawah threshold | P0 |
+| Stock opname | Fitur hitung fisik & adjustment stok | P0 |
+| Riwayat stok | Log semua perubahan stok (masuk/keluar/adjustment) | P0 |
+| Transfer stok antar cabang | Pindahkan stok dari cabang A ke B | P1 |
+| Stok bahan baku (recipe) | Definisikan resep: 1 Kopi Latte = 20g kopi + 200ml susu + 1 cup | P1 |
+| Purchase order | Buat PO ke supplier | P2 |
+| Receiving goods | Terima barang masuk & update stok | P1 |
+| Metode stok | FIFO, LIFO, Average | P2 |
+| Multi-unit conversion | 1 karton = 24 pcs, beli per karton jual per pcs | P1 |
+| Expired date tracking | Pantau tanggal kedaluwarsa produk | P2 |
+
+---
+
+### 4.4 Modul 4: Manajemen Pelanggan (CRM)
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Database pelanggan | Nama, no. HP, email, alamat, tanggal lahir | P0 |
+| Riwayat transaksi | Lihat semua transaksi per pelanggan | P0 |
+| Kategori pelanggan | Regular, Member, VIP, Wholesale | P1 |
+| Program loyalitas / poin | Kumpulkan poin per transaksi, tukar dengan reward | P1 |
+| Membership card | Kartu member digital (QR-based) | P2 |
+| Diskon member | Harga khusus / diskon otomatis untuk member | P1 |
+| Piutang pelanggan | Track hutang / kasbon pelanggan | P1 |
+| Ucapan otomatis | Kirim ucapan ulang tahun / promo via WhatsApp | P2 |
+| Import/export pelanggan | Bulk import via CSV | P2 |
+| Segmentasi pelanggan | Filter berdasarkan frekuensi belanja, total spend, dsb. | P2 |
+
+---
+
+### 4.5 Modul 5: Laporan & Analitik
+
+> [!IMPORTANT]
+> Laporan adalah alat pengambilan keputusan utama bagi pemilik bisnis. Semua laporan harus bisa di-export ke PDF dan Excel.
+
+#### 4.5.1 Dashboard Utama
+
+```
++--------------------------------------------------------------+
+|  DASHBOARD KasirKu                    Hari ini: 28 Jun 2026  |
++----------+----------+----------+-----------------------------+
+|          |          |          |                              |
+| Rp 4.5jt | 87       | 52       | 12                           |
+| Penjualan| Transaksi| Pelanggan| Stok Rendah                  |
+| +12%     | +8%      | +5%      | -3                           |
++----------+----------+----------+-----------------------------+
+|                                                               |
+|  Grafik Penjualan (7 Hari Terakhir)                          |
+|  [Line chart area]                                            |
+|  Sen  Sel  Rab  Kam  Jum  Sab  Min                            |
+|                                                               |
+|  Produk Terlaris         |  Jam Ramai                        |
+|  1. Kopi Latte (142)     |  11:00 - 13:00 (lunch)           |
+|  2. Nasi Goreng (98)     |  17:00 - 19:00 (dinner)          |
+|  3. Es Teh Manis (87)    |  08:00 - 09:00 (breakfast)       |
++---------------------------+----------------------------------+
+```
+
+#### 4.5.2 Jenis Laporan
+
+| Laporan | Konten | Prioritas |
+|:---|:---|:---|
+| **Laporan Penjualan** | Total penjualan, jumlah transaksi, rata-rata per transaksi, per periode | P0 |
+| **Laporan Laba Rugi** | Pendapatan - HPP - Biaya operasional = Laba bersih | P0 |
+| **Laporan Produk** | Produk terlaris, produk kurang laku, margin per produk | P0 |
+| **Laporan Stok** | Stok masuk/keluar, stok opname, stok rendah, nilai inventaris | P0 |
+| **Laporan Kasir/Shift** | Penjualan per kasir, per shift, rekonsiliasi kas | P0 |
+| **Laporan Pelanggan** | Customer acquisition, retention, top spender, frequensi | P1 |
+| **Laporan Pembayaran** | Breakdown per metode bayar (tunai vs digital) | P0 |
+| **Laporan Pajak** | Rekap pajak (PPN) per periode | P1 |
+| **Laporan Diskon** | Total diskon yang diberikan, efektivitas promo | P1 |
+| **Laporan Cabang** | Perbandingan performa antar cabang | P1 |
+| **Laporan Absensi** | Kehadiran karyawan, jam kerja | P2 |
+| **Laporan Arus Kas** | Cash flow masuk/keluar harian | P1 |
+
+#### 4.5.3 Fitur Analitik
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Filter periode | Hari ini, kemarin, 7 hari, 30 hari, custom range | P0 |
+| Export PDF/Excel | Download laporan dalam format PDF atau XLSX | P0 |
+| Kirim laporan otomatis | Laporan harian/mingguan via email/WhatsApp | P2 |
+| Perbandingan periode | Bandingkan penjualan bulan ini vs bulan lalu | P1 |
+| Grafik & chart interaktif | Line chart, bar chart, pie chart, trend line | P0 |
+| Real-time dashboard | Auto-refresh data setiap 30 detik | P1 |
+
+---
+
+### 4.6 Modul 6: Manajemen Karyawan & Shift
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| CRUD karyawan | Tambah, edit, nonaktifkan karyawan | P0 |
+| Assign role | Tetapkan role (Owner/Admin/Kasir/Dapur/Viewer) | P0 |
+| Manajemen shift | Buat jadwal shift (pagi/siang/malam) | P1 |
+| Buka/tutup shift kasir | Log saldo awal, saldo akhir, selisih kas | P0 |
+| Absensi | Clock-in / clock-out karyawan | P2 |
+| Log aktivitas | Audit trail semua aktivitas karyawan | P1 |
+| Komisi karyawan | Hitung komisi berdasarkan penjualan | P2 |
+| Restrict akses per outlet | Karyawan hanya bisa akses outlet yang ditugaskan | P1 |
+
+---
+
+### 4.7 Modul 7: Multi-Outlet / Cabang
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Tambah cabang | Buat outlet baru dengan alamat & info lengkap | P1 |
+| Switch outlet | Pindah antar outlet dari satu akun | P1 |
+| Sinkronisasi produk | Sinkronkan katalog produk ke semua cabang | P1 |
+| Harga per outlet | Set harga berbeda per cabang jika diperlukan | P2 |
+| Laporan per outlet | Filter laporan berdasarkan cabang | P1 |
+| Dashboard konsolidasi | Lihat ringkasan semua cabang dalam 1 dashboard | P1 |
+| Transfer stok | Mutasi stok antar outlet | P1 |
+
+---
+
+### 4.8 Modul 8: Manajemen Meja & Pesanan (Mode F&B)
+
+> [!NOTE]
+> Modul ini khusus untuk bisnis F&B (restoran, kafe, dll.) dan bisa diaktifkan/nonaktifkan sesuai jenis usaha.
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Layout meja visual | Drag & drop pengaturan denah meja | P1 |
+| Status meja | Kosong, terisi, reserved (color-coded) | P1 |
+| Order per meja | Pesanan terkait dengan nomor meja | P1 |
+| Gabung/pisah meja | Merge 2+ meja atau split | P2 |
+| Split bill | Bagi tagihan per orang atau per item | P1 |
+| Pindah meja | Pindahkan pesanan dari meja A ke meja B | P1 |
+| Dine-in / Take Away / Delivery | Label tipe pesanan | P0 |
+| Kitchen Display System (KDS) | Tampilan layar dapur untuk order masuk | P1 |
+| Status pesanan | New - Preparing - Ready - Served - Done | P1 |
+| Antrian / Queue number | Nomor antrian untuk take-away | P1 |
+| Service charge | Tambah service charge otomatis (misal 5%) | P1 |
+
+---
+
+### 4.9 Modul 9: Retur & Refund
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Retur penuh | Batalkan seluruh transaksi, kembalikan stok | P0 |
+| Retur sebagian | Retur item tertentu dari transaksi | P0 |
+| Refund tunai | Pengembalian uang tunai | P0 |
+| Refund non-tunai | Pengembalian ke metode bayar awal | P1 |
+| Alasan retur | Wajib input alasan (produk cacat, salah kirim, dll.) | P0 |
+| Approval retur | Retur di atas nominal tertentu perlu persetujuan Admin/Owner | P1 |
+| Riwayat retur | Log semua retur dan refund | P0 |
+| Tukar barang | Exchange produk dengan selisih harga | P1 |
+
+---
+
+### 4.10 Modul 10: Promosi & Diskon
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Diskon persentase | Diskon % per item atau per transaksi | P0 |
+| Diskon nominal | Potongan harga tetap (Rp) | P0 |
+| Voucher / kupon | Buat & distribusikan kode voucher | P1 |
+| Promo otomatis | Buy 1 Get 1, minimal pembelian, happy hour | P1 |
+| Promo per periode | Set tanggal mulai & berakhir promo | P1 |
+| Promo per outlet | Promo khusus cabang tertentu | P2 |
+| Promo member only | Diskon eksklusif untuk member | P2 |
+| Bundle / combo | Paket produk dengan harga spesial | P1 |
+| Laporan efektivitas promo | Track penggunaan promo & dampak ke penjualan | P2 |
+
+---
+
+### 4.11 Modul 11: Pengaturan Bisnis
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Profil bisnis | Nama, logo, alamat, no. telp, email | P0 |
+| Pengaturan pajak | Enable/disable PPN, persentase pajak | P0 |
+| Pengaturan struk | Kustomisasi header, footer, logo struk | P0 |
+| Mata uang & format angka | IDR, format ribuan (titik/koma) | P0 |
+| Zona waktu | WIB, WITA, WIT | P0 |
+| Pengaturan pembulatan | Pembulatan ke Rp 100 / Rp 500 terdekat | P1 |
+| Pengaturan printer | Koneksi ke thermal printer (USB/Bluetooth/WiFi) | P0 |
+| Pengaturan notifikasi | On/off notifikasi stok, laporan, dll. | P1 |
+| Backup & restore | Backup data manual & restore | P1 |
+| Hapus akun | Penghapusan akun & data (GDPR-like compliance) | P2 |
+
+---
+
+### 4.12 Modul 12: Fitur Offline & Sinkronisasi
+
+> [!WARNING]
+> Mode offline adalah fitur kritis untuk UMKM di daerah dengan koneksi internet tidak stabil.
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Transaksi offline | Proses transaksi tanpa internet (Service Worker + IndexedDB) | P0 |
+| Queue offline | Antrian transaksi yang belum ter-sync | P0 |
+| Auto-sync | Sinkronisasi otomatis saat kembali online | P0 |
+| Conflict resolution | Handle konflik data saat sync (last-write-wins + manual resolve) | P1 |
+| Offline indicator | Indikator visual status koneksi (online/offline/syncing) | P0 |
+| Cache produk & harga | Katalog produk tersedia secara offline | P0 |
+
+---
+
+### 4.13 Modul 13: Catat Keuangan / Kas
+
+| Fitur | Deskripsi | Prioritas |
+|:---|:---|:---|
+| Kas masuk | Catat pemasukan non-penjualan (investasi, pinjaman, dll.) | P1 |
+| Kas keluar | Catat pengeluaran (sewa, listrik, gaji, bahan baku) | P1 |
+| Kategori kas | Kategori pemasukan & pengeluaran (customizable) | P1 |
+| Saldo kas | Tampilkan saldo kas real-time | P1 |
+| Rekonsiliasi kas | Cocokkan saldo sistem vs saldo fisik | P1 |
+| Laporan arus kas | Cash flow harian/mingguan/bulanan | P1 |
+
+---
+
+## 5. Kebutuhan Non-Fungsional
+
+### 5.1 Performa
+
+| Metrik | Target | Cara Pengukuran |
+|:---|:---|:---|
+| Time to Interactive (TTI) | < 3 detik | Lighthouse |
+| Waktu proses transaksi | < 1 detik (dari klik bayar hingga struk siap) | Custom metrics |
+| Response time API | < 200ms (P95) | APM monitoring |
+| Concurrent users | 100+ per outlet | Load testing |
+| Database query time | < 50ms (P95) | Query profiling |
+| Uptime | 99.9% (8.76 jam downtime/tahun) | Monitoring |
+
+### 5.2 Keamanan
+
+| Aspek | Implementasi |
+|:---|:---|
+| Enkripsi data transit | TLS 1.3 (HTTPS) |
+| Enkripsi data at rest | AES-256 untuk data sensitif |
+| Password hashing | bcrypt dengan salt |
+| Session management | JWT + refresh token, auto-expire |
+| Rate limiting | Throttle API 100 req/min per user |
+| Input validation | Sanitize semua input, parameterized queries |
+| Audit trail | Log semua operasi sensitif (delete, edit harga, void) |
+| OWASP Top 10 | Mitigasi XSS, CSRF, SQL Injection, dll. |
+
+### 5.3 Skalabilitas
+
+| Aspek | Strategi |
+|:---|:---|
+| Horizontal scaling | Stateless API, load balancer |
+| Database scaling | Read replicas, connection pooling |
+| Caching | Redis untuk session & frequently accessed data |
+| CDN | Static assets via CDN (Vercel Edge) |
+| Multi-tenancy | Tenant isolation via database schema |
+
+### 5.4 Aksesibilitas & UX
+
+| Aspek | Implementasi |
+|:---|:---|
+| Responsive design | Optimal di desktop (1024px+), tablet (768px+), mobile (360px+) |
+| Touch-friendly | Minimum tap target 44x44px |
+| Kontras warna | WCAG 2.1 AA compliance |
+| Bahasa | Bahasa Indonesia (default), English (opsional) |
+| Onboarding | Wizard setup bisnis pertama kali + tooltip panduan |
+| Loading states | Skeleton loader, progress indicator |
+| Error handling | User-friendly error messages + retry option |
+
+---
+
+## 6. Desain UI/UX
+
+### 6.1 Design System
+
+#### Color Palette
+
+| Token | Warna | Penggunaan |
+|:---|:---|:---|
+| `--primary` | `#6C5CE7` (Purple) | CTA buttons, active states, links |
+| `--primary-dark` | `#5A4BD1` | Hover states |
+| `--secondary` | `#00CEC9` (Teal) | Secondary actions, badges |
+| `--success` | `#00B894` (Green) | Sukses, stok aman, pembayaran berhasil |
+| `--warning` | `#FDCB6E` (Amber) | Stok rendah, peringatan |
+| `--danger` | `#E17055` (Coral) | Error, hapus, retur, stok habis |
+| `--bg-dark` | `#1A1A2E` | Background utama (dark mode) |
+| `--bg-card` | `#16213E` | Card background (dark mode) |
+| `--bg-light` | `#F8F9FA` | Background utama (light mode) |
+| `--text-primary` | `#FFFFFF` / `#2D3436` | Teks utama (dark/light) |
+| `--text-secondary` | `#B2BEC3` / `#636E72` | Teks sekunder |
+
+#### Typography
+
+| Element | Font | Size | Weight |
+|:---|:---|:---|:---|
+| Heading 1 | Inter | 28px | 700 (Bold) |
+| Heading 2 | Inter | 22px | 600 (SemiBold) |
+| Heading 3 | Inter | 18px | 600 |
+| Body | Inter | 14px | 400 (Regular) |
+| Caption | Inter | 12px | 400 |
+| Button | Inter | 14px | 600 |
+| Price / Amount | JetBrains Mono | 16px | 700 |
+
+#### Component Library
+
+| Komponen | Variasi |
+|:---|:---|
+| Button | Primary, Secondary, Ghost, Danger, Icon-only, Loading |
+| Input | Text, Number, Password, Search, Date, Select, Textarea |
+| Card | Product card, Stat card, Order card, Table card |
+| Modal | Confirmation, Form, Alert, Full-screen |
+| Toast | Success, Error, Warning, Info |
+| Badge | Status (active/inactive), Count, Tag |
+| Table | Sortable, Filterable, Paginated, Selectable rows |
+| Sidebar | Collapsible, dengan ikon & label |
+| Tab | Horizontal tabs, pill tabs |
+| Avatar | Circle, Square, dengan status indicator |
+
+### 6.2 Layout Utama
+
+```
++--------------------------------------------------------------+
+|  [Menu]  KasirKu   | Outlet: Kedai Kopi Rina - Cabang 1     |
+|                     | User: Rina (Owner) | Notif | Settings   |
++------+-------------------------------------------------------+
+|      |                                                        |
+| Menu |              AREA KONTEN UTAMA                         |
+| Bar  |                                                        |
+|      |     (berganti sesuai menu yang dipilih)                |
+|      |                                                        |
++------+--------------------------------------------------------+
+|  Status: Online  |  Sync: Up to date  |  v1.0.0              |
++--------------------------------------------------------------+
+
+Sidebar Menu:
+- Dashboard
+- Kasir (POS)
+- Produk & Stok
+- Pelanggan
+- Karyawan
+- Promo & Diskon
+- Laporan
+- Kas / Keuangan
+- Cabang
+- Pengaturan
+- Bantuan
+```
+
+### 6.3 Tema & Mode
+
+| Mode | Deskripsi |
+|:---|:---|
+| **Dark Mode** (default) | Tema gelap yang nyaman untuk penggunaan seharian di konter kasir |
+| **Light Mode** | Tema terang untuk lingkungan outdoor/terang |
+| **Auto** | Mengikuti preferensi sistem |
+| **High Contrast** | Untuk aksesibilitas |
+
+---
+
+## 7. User Flow Utama
+
+### 7.1 Flow Onboarding Bisnis Baru
+
+```mermaid
+flowchart TD
+    A["Landing Page"] --> B["Register Akun"]
+    B --> C["Verifikasi Email/HP"]
+    C --> D["Setup Profil Bisnis"]
+    D --> E["Pilih Jenis Usaha"]
+    E --> F["Tambah Produk Pertama"]
+    F --> G{"Import CSV?"}
+    G -->|Ya| H["Upload CSV"]
+    G -->|Tidak| I["Input Manual"]
+    H & I --> J["Pengaturan Dasar"]
+    J --> K["Pajak, Printer, Struk"]
+    K --> L["Selesai! Mulai Berjualan"]
+    L --> M["Dashboard"]
+```
+
+### 7.2 Flow Transaksi Kasir
+
+```mermaid
+flowchart TD
+    A["Buka Halaman Kasir"] --> B["Pilih / Scan Produk"]
+    B --> C["Masuk Keranjang"]
+    C --> D{"Tambah Lagi?"}
+    D -->|Ya| B
+    D -->|Tidak| E{"Diskon?"}
+    E -->|Ya| F["Terapkan Diskon"]
+    E -->|Tidak| G["Klik BAYAR"]
+    F --> G
+    G --> H{"Pilih Metode Bayar"}
+    H --> I["Tunai: Input nominal, hitung kembalian"]
+    H --> J["Digital: Generate QR / Redirect"]
+    H --> K["Split: Kombinasi metode"]
+    I & J & K --> L["Transaksi Berhasil"]
+    L --> M["Cetak / Kirim Struk"]
+    L --> N["Stok Auto-Update"]
+    L --> O["Laporan Auto-Update"]
+    M --> P["Siap Transaksi Berikutnya"]
+```
+
+### 7.3 Flow Retur / Refund
+
+```mermaid
+flowchart TD
+    A["Cari Transaksi"] --> B["Pilih Transaksi"]
+    B --> C{"Retur Penuh / Sebagian?"}
+    C -->|Penuh| D["Pilih Semua Item"]
+    C -->|Sebagian| E["Pilih Item Tertentu"]
+    D & E --> F["Input Alasan Retur"]
+    F --> G{"Nominal > Limit?"}
+    G -->|Ya| H["Butuh Approval Owner/Admin"]
+    G -->|Tidak| I["Proses Retur"]
+    H -->|Approved| I
+    H -->|Rejected| J["Retur Ditolak"]
+    I --> K["Refund ke Customer"]
+    I --> L["Stok Dikembalikan"]
+    I --> M["Laporan Updated"]
+```
+
+---
+
+## 8. Roadmap & Prioritas Rilis
+
+### 8.1 Definisi Prioritas
+
+| Label | Definisi |
+|:---|:---|
+| **P0 — Must Have** | Fitur inti yang wajib ada di rilis pertama. Tanpa ini, produk tidak bisa digunakan. |
+| **P1 — Should Have** | Fitur penting yang sangat diharapkan pengguna. Target rilis fase 2. |
+| **P2 — Nice to Have** | Fitur pelengkap yang menambah value. Target rilis fase 3+. |
+
+### 8.2 Rencana Rilis
+
+#### Fase 1 — MVP (Minggu 1-8)
+**Goal:** Kasir bisa beroperasi untuk 1 outlet dengan fitur dasar.
+
+| Modul | Fitur |
+|:---|:---|
+| Auth | Register, login, PIN kasir, RBAC (Owner, Kasir) |
+| POS | Keranjang, search produk, grid view, kategori, diskon, pembayaran tunai |
+| Produk | CRUD produk, kategori, varian, gambar, unit satuan |
+| Stok | Stok real-time, stok minimum alert, riwayat stok |
+| Pembayaran | Tunai + QRIS |
+| Struk | Cetak thermal printer + struk digital |
+| Laporan | Penjualan harian, produk terlaris, laporan kasir |
+| Retur | Retur penuh & sebagian |
+| Pengaturan | Profil bisnis, pajak, printer |
+| Offline | Transaksi offline, auto-sync |
+| Dashboard | Ringkasan penjualan hari ini |
+
+---
+
+#### Fase 2 — Growth (Minggu 9-16)
+**Goal:** Fitur lengkap untuk single & multi-outlet, CRM, dan analitik advanced.
+
+| Modul | Fitur |
+|:---|:---|
+| Auth | Login Google, 2FA, role Admin & Viewer |
+| POS | Multi-cart, catatan pesanan, hold pesanan, custom product |
+| Produk | Modifier/add-on, barcode, import CSV, harga bertingkat, bundle |
+| Stok | Stock opname, receiving goods, transfer stok, multi-unit |
+| CRM | Database pelanggan, riwayat transaksi, kategori, diskon member |
+| Pembayaran | E-wallet, split payment, kartu |
+| Laporan | Laba rugi, pelanggan, pembayaran, pajak, diskon, perbandingan periode |
+| Karyawan | CRUD, shift, log aktivitas |
+| Cabang | Multi-outlet, switch outlet, sync produk, laporan per outlet |
+| F&B | Layout meja, order per meja, KDS, split bill, dine-in/take-away |
+| Promo | Voucher, promo otomatis (B1G1, happy hour), promo per periode |
+| Kas | Kas masuk/keluar, kategori, saldo, arus kas |
+
+---
+
+#### Fase 3 — Scale (Minggu 17-24)
+**Goal:** Fitur premium, integrasi, dan optimasi.
+
+| Modul | Fitur |
+|:---|:---|
+| POS | Keyboard shortcuts, self-order kiosk mode |
+| Stok | Purchase order, FIFO/LIFO, expired tracking, resep bahan baku |
+| CRM | Loyalitas poin, membership card, ucapan otomatis, segmentasi |
+| Cabang | Harga per outlet, dashboard konsolidasi |
+| Promo | Promo per outlet, promo member-only, laporan efektivitas |
+| Karyawan | Absensi, komisi |
+| Retur | Approval workflow, tukar barang |
+| Integrasi | WhatsApp Business API, export ke software akuntansi |
+| Kasbon | Hutang pelanggan, cicilan |
+| Struk | Custom template, QR code |
+| Pengaturan | Backup/restore, hapus akun |
+
+---
+
+## 9. Metrik Keberhasilan (KPI)
+
+| Metrik | Target (6 bulan pertama) | Cara Ukur |
+|:---|:---|:---|
+| Monthly Active Users (MAU) | 5.000+ | Analytics |
+| Daily Active Users (DAU) | 2.000+ | Analytics |
+| Transaksi per hari (all users) | 50.000+ | Database |
+| Rata-rata transaksi/outlet/hari | 30+ | Database |
+| User retention (D30) | > 60% | Analytics |
+| Crash rate | < 0.5% | Error monitoring |
+| NPS (Net Promoter Score) | > 50 | Survey |
+| Customer Satisfaction (CSAT) | > 4.2/5 | In-app rating |
+| Time-to-first-transaction | < 10 menit | Analytics |
+| Churn rate (monthly) | < 5% | Analytics |
+
+---
+
+## 10. Risiko & Mitigasi
+
+| # | Risiko | Dampak | Probabilitas | Mitigasi |
+|:--|:---|:---|:---|:---|
+| 1 | Koneksi internet tidak stabil di daerah | Tinggi | Tinggi | Mode offline robust dengan sync queue |
+| 2 | Printer thermal tidak kompatibel | Sedang | Sedang | Support multiple protokol (ESC/POS), testing dengan printer populer |
+| 3 | Migrasi data dari sistem lama | Sedang | Tinggi | Fitur import CSV/Excel, panduan migrasi |
+| 4 | Keamanan data pelanggan | Tinggi | Rendah | Enkripsi end-to-end, audit berkala, compliance |
+| 5 | Skalabilitas saat user bertambah | Tinggi | Sedang | Auto-scaling, database optimization, caching |
+| 6 | Adopsi pengguna rendah | Tinggi | Sedang | Onboarding wizard, tutorial video, CS responsive |
+| 7 | Kompetisi (Kasir Pintar, iReap, Moka) | Sedang | Tinggi | Differensiasi UI/UX, pricing kompetitif, fitur offline superior |
+| 8 | Payment gateway downtime | Tinggi | Rendah | Fallback ke metode tunai, multi-gateway support |
+
+---
+
+## 11. Asumsi & Batasan
+
+### 11.1 Asumsi
+1. Target pengguna utama adalah UMKM Indonesia yang sudah memiliki smartphone/tablet/PC
+2. Pengguna memiliki koneksi internet (walaupun tidak selalu stabil)
+3. Payment gateway (Midtrans/Xendit) tersedia dan dapat diintegrasikan
+4. Printer thermal 58mm/80mm adalah standar industri yang digunakan
+
+### 11.2 Batasan (Out of Scope untuk v1)
+1. Integrasi marketplace (Shopee, Tokopedia, dll.)
+2. Modul akuntansi lengkap (jurnal umum, neraca)
+3. Manajemen supply chain / gudang terpisah
+4. Aplikasi native (Android/iOS) — gunakan PWA terlebih dahulu
+5. Self-ordering kiosk / QR order customer
+6. Integrasi food delivery (GoFood, GrabFood)
+7. Fitur payroll karyawan
+8. Multi-currency support
+
+---
+
+## 12. Acceptance Criteria (Contoh untuk Modul Kunci)
+
+### 12.1 POS — Transaksi Tunai
+```gherkin
+Feature: Transaksi pembayaran tunai
+
+  Scenario: Kasir menyelesaikan transaksi tunai
+    Given kasir sudah login dan berada di halaman POS
+    And ada minimal 1 produk di keranjang
+    When kasir klik tombol "Bayar Sekarang"
+    And memilih metode pembayaran "Tunai"
+    And memasukkan nominal uang diterima >= total tagihan
+    Then sistem menampilkan jumlah kembalian yang benar
+    When kasir klik "Selesaikan Transaksi"
+    Then transaksi tercatat di database dengan status "completed"
+    And stok produk berkurang sesuai qty yang dibeli
+    And struk dapat dicetak atau dikirim digital
+    And transaksi muncul di laporan penjualan hari ini
+
+  Scenario: Uang yang diterima kurang dari total
+    Given kasir memasukkan nominal uang < total tagihan
+    Then tombol "Selesaikan Transaksi" disabled
+    And menampilkan pesan "Uang yang diterima kurang"
+```
+
+### 12.2 Stok — Alert Stok Rendah
+```gherkin
+Feature: Notifikasi stok minimum
+
+  Scenario: Stok produk mencapai batas minimum
+    Given produk "Kopi Arabica 1kg" memiliki stok minimum = 5
+    And stok saat ini = 6
+    When terjadi transaksi yang mengurangi stok menjadi = 5 atau kurang
+    Then sistem menampilkan notifikasi "Stok Rendah: Kopi Arabica 1kg (sisa: 5)"
+    And badge notifikasi di header bertambah
+    And produk ditandai dengan icon warning di halaman inventaris
+```
+
+### 12.3 Offline — Transaksi Tanpa Internet
+```gherkin
+Feature: Transaksi mode offline
+
+  Scenario: Kasir melakukan transaksi saat offline
+    Given koneksi internet terputus
+    And indikator menampilkan status "Offline"
+    When kasir melakukan transaksi pembayaran tunai
+    Then transaksi berhasil diproses secara lokal (IndexedDB)
+    And struk tetap bisa dicetak
+    And transaksi masuk ke antrian sinkronisasi
+
+  Scenario: Sinkronisasi saat kembali online
+    Given ada 5 transaksi di antrian offline
+    When koneksi internet kembali tersedia
+    Then semua transaksi otomatis di-sync ke server
+    And indikator menampilkan "Syncing... (3/5)"
+    And setelah selesai menampilkan "Up to date"
+```
+
+---
+
+## 13. Glosarium
+
+| Istilah | Definisi |
+|:---|:---|
+| **POS** | Point of Sale — sistem pencatatan transaksi penjualan |
+| **SKU** | Stock Keeping Unit — kode unik untuk setiap produk |
+| **QRIS** | Quick Response Code Indonesian Standard — standar QR pembayaran nasional |
+| **KDS** | Kitchen Display System — layar dapur untuk melihat pesanan masuk |
+| **PWA** | Progressive Web App — aplikasi web yang bisa diakses seperti aplikasi native |
+| **RBAC** | Role-Based Access Control — kontrol akses berdasarkan peran pengguna |
+| **CRM** | Customer Relationship Management — manajemen hubungan pelanggan |
+| **FIFO** | First In First Out — metode kalkulasi stok |
+| **HPP** | Harga Pokok Penjualan — biaya langsung untuk menghasilkan produk |
+| **MVP** | Minimum Viable Product — versi produk minimal yang bisa dirilis |
+| **UMKM** | Usaha Mikro, Kecil, dan Menengah |
+| **B1G1** | Buy 1 Get 1 — promo beli 1 gratis 1 |
+
+---
+
+## 14. Referensi & Benchmark
+
+| Aplikasi | Keunggulan yang Diadopsi |
+|:---|:---|
+| **Kasir Pintar** | Fitur lengkap UMKM, plugin system, offline mode |
+| **Moka POS** | UI/UX modern, integrasi payment gateway |
+| **iReap POS** | Inventory management, multi-outlet |
+| **Square POS** | Simplicity, hardware integration |
+| **Toast POS** | F&B features (KDS, table management) |
+| **Loyverse** | Free tier, CRM, analytics |
+
+---
+
+## 15. Approval & Sign-off
+
+| Stakeholder | Nama | Status | Tanggal |
+|:---|:---|:---|:---|
+| Product Owner | _________________ | Pending | |
+| Tech Lead | _________________ | Pending | |
+| UI/UX Designer | _________________ | Pending | |
+| QA Lead | _________________ | Pending | |
+| Business Stakeholder | _________________ | Pending | |
+
+---
+
+> [!NOTE]
+> Dokumen ini adalah living document yang akan terus diperbarui sesuai perkembangan produk, feedback pengguna, dan kondisi pasar. Setiap perubahan signifikan akan melewati proses review dan approval.
+
+---
+
+*Dibuat oleh: Tim Produk KasirKu*  
+*Terakhir diperbarui: 28 Juni 2026*
