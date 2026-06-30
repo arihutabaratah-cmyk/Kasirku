@@ -1,8 +1,5 @@
-# Ignore development server
-server.js
+# Ignore development server and reference scripts
+dev/
 
 # Ignore documentation & design specs
 PRD
-
-# Ignore reference Google Apps Script file
-google_apps_script.js
