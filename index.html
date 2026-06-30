@@ -91,6 +91,10 @@
                     <i data-lucide="wallet"></i>
                     <span>PPOB & Finansial</span>
                 </a>
+                <a href="#" class="nav-item" data-page="attendance" id="nav-attendance">
+                    <i data-lucide="user-check"></i>
+                    <span>Absensi Karyawan</span>
+                </a>
                 <a href="#" class="nav-item" data-page="settings" id="nav-settings">
                     <i data-lucide="settings"></i>
                     <span>Pengaturan</span>
@@ -541,6 +545,47 @@
                     </div>
                 </div>
 
+                <!-- Real-time Profit & Loss (Laba Rugi) Panel -->
+                <div class="void-log-card" style="margin-top: 24px;">
+                    <div class="chart-header-row" style="margin-bottom: 12px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;"><i data-lucide="calculator" style="width: 16px; height: 16px; color: var(--success-color);"></i>Dasbor Laba Rugi Real-Time (P&L)</h3>
+                        <span style="font-size: 10px; color: var(--success-color); background: var(--success-glow); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Real-Time</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+                        Visualisasi rincian pendapatan kotor, HPP (Harga Pokok Penjualan) berdasarkan resep produk, biaya operasional, dan margin laba bersih.
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
+                        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Pendapatan Kotor</span>
+                            <strong id="pl-revenue" style="font-size: 16px; color: var(--text-primary);">Rp 0</strong>
+                        </div>
+                        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">HPP (COGS / Bahan Baku)</span>
+                            <strong id="pl-cogs" style="font-size: 16px; color: var(--danger-color);">Rp 0</strong>
+                        </div>
+                        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Biaya Operasional</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-top:-2px;">
+                                <strong id="pl-opex" style="font-size: 16px; color: var(--warning-color);">Rp 20.000</strong>
+                                <button onclick="adjustOpex()" style="background:none; border:none; color:var(--primary-color); font-size:10px; cursor:pointer; text-decoration:underline; font-weight:600;">Ubah</button>
+                            </div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Laba Bersih (Net Profit)</span>
+                            <strong id="pl-net-profit" style="font-size: 16px; color: var(--success-color);">Rp 0</strong>
+                        </div>
+                    </div>
+
+                    <!-- Visual Progress Bar Chart of Profit Margin -->
+                    <h5 style="margin-bottom: 8px; font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Struktur Margin Laba Bersih</h5>
+                    <div style="height: 24px; border-radius: var(--border-radius-sm); overflow: hidden; display: flex; font-size: 10px; font-weight: 700; color: white;">
+                        <div id="pl-bar-net-profit" style="background: #10b981; display: flex; align-items: center; justify-content: center; transition: width 0.3s ease;">Laba Bersih</div>
+                        <div id="pl-bar-cogs" style="background: #ef4444; display: flex; align-items: center; justify-content: center; transition: width 0.3s ease;">HPP</div>
+                        <div id="pl-bar-opex" style="background: #f59e0b; display: flex; align-items: center; justify-content: center; transition: width 0.3s ease;">Ops</div>
+                    </div>
+                </div>
+
                 <!-- Custom SVG Visual Charts Section -->
                 <div class="charts-row">
                     <!-- Chart 1: Revenue Trend -->
@@ -749,85 +794,128 @@
                             <h3 style="margin: 0; font-size: 16px;">Catat Transaksi Baru</h3>
                         </div>
 
-                        <!-- Auto-Parse Receipt Bukti Transaksi -->
-                        <div class="form-group" style="margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 16px;">
-                            <label for="ppob-proof-parser" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);"><i data-lucide="clipboard" style="width: 13px; height: 13px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>Tempel Teks Bukti Struk (Auto-Fill)</label>
-                            <textarea id="ppob-proof-parser" placeholder="Tempel SMS / WhatsApp / salinan bukti transfer di sini untuk mendeteksi data secara otomatis..." rows="2" style="width: 100%; padding: 8px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); resize: none; font-size: 11px;"></textarea>
+                        <!-- Stepper Indicator -->
+                        <div class="ppob-stepper" style="display: flex; justify-content: space-between; margin-bottom: 24px; position: relative;">
+                            <div style="position: absolute; top: 12px; left: 0; width: 100%; height: 2px; background: var(--border-color); z-index: 1;"></div>
+                            <div id="ppob-step-line" style="position: absolute; top: 12px; left: 0; width: 0%; height: 2px; background: var(--primary-color); z-index: 1; transition: width 0.3s ease;"></div>
+                            
+                            <div class="stepper-node active" id="node-step-1" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                <div class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid var(--bg-secondary);">1</div>
+                                <span style="font-size: 10px; font-weight: 600;">Layanan</span>
+                            </div>
+                            <div class="stepper-node" id="node-step-2" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                <div class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid var(--bg-secondary);">2</div>
+                                <span style="font-size: 10px; font-weight: 600;">Detail</span>
+                            </div>
+                            <div class="stepper-node" id="node-step-3" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                <div class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid var(--bg-secondary);">3</div>
+                                <span style="font-size: 10px; font-weight: 600;">Bayar</span>
+                            </div>
                         </div>
 
-                        <form id="ppob-transaction-form">
-                            <div class="form-group" style="margin-bottom: 16px;">
-                                <label for="ppob-type" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Jenis Layanan</label>
-                                <select id="ppob-type" required style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
-                                    <option value="ewallet">Top Up E-Wallet (Dana, OVO, dll)</option>
-                                    <option value="transfer">Transfer Bank (Mini ATM / BRILink)</option>
-                                    <option value="tarik">Tarik Tunai (Mini ATM / BRILink)</option>
-                                    <option value="pulsa">Pulsa & Paket Data</option>
-                                    <option value="pln">Listrik PLN (Token / Tagihan)</option>
-                                    <option value="lainnya">Tagihan Lain (PDAM, BPJS, dll)</option>
-                                </select>
-                            </div>
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                                <div class="form-group" style="margin: 0;">
-                                    <label for="ppob-provider" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Penyedia / Bank</label>
-                                    <input type="text" id="ppob-provider" required placeholder="Contoh: DANA, BRI, PLN" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                        <form id="ppob-transaction-form" onsubmit="handlePpobFormSubmit(event)">
+                            <!-- STEP 1: LAYANAN -->
+                            <div class="ppob-step-group" id="ppob-step-1">
+                                <!-- Auto-Parse Receipt Bukti Transaksi -->
+                                <div class="form-group" style="margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 16px;">
+                                    <label for="ppob-proof-parser" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);"><i data-lucide="clipboard" style="width: 13px; height: 13px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>Tempel Teks Bukti Struk (Auto-Fill)</label>
+                                    <textarea id="ppob-proof-parser" placeholder="Tempel SMS / WhatsApp / salinan bukti transfer di sini..." rows="2" style="width: 100%; padding: 8px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); resize: none; font-size: 11px;"></textarea>
+                                    <small style="font-size:10px; color:var(--text-secondary); display:block; margin-top:4px;">*Mendukung format SMS transfer/topup otomatis bank Mandiri, BRI, DANA, OVO.</small>
                                 </div>
-                                <div class="form-group" style="margin: 0;">
-                                    <label for="ppob-target" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">No. Rekening / HP</label>
-                                    <input type="text" id="ppob-target" required placeholder="Contoh: 0812xxxxxxxx" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
-                                </div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 16px;">
-                                <label for="ppob-amount" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Nominal / Saldo (Rp)</label>
-                                <input type="number" id="ppob-amount" required min="0" placeholder="Contoh: 50000" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
-                            </div>
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                                <div class="form-group" style="margin: 0;">
-                                    <label for="ppob-fee" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Biaya Admin (Rp)</label>
-                                    <input type="number" id="ppob-fee" required min="0" placeholder="Contoh: 2500" value="2500" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
-                                </div>
-                                <div class="form-group" style="margin: 0;">
-                                    <label for="ppob-cost" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Biaya Modal (Rp)</label>
-                                    <input type="number" id="ppob-cost" required min="0" placeholder="Contoh: 500" value="500" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
-                                </div>
-                            </div>
-                            
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
-                                <div class="form-group" style="margin: 0;">
-                                    <label for="ppob-payment" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Metode Pembayaran</label>
-                                    <select id="ppob-payment" required style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
-                                        <option value="Tunai">Tunai</option>
-                                        <option value="Transfer Bank">Transfer Bank</option>
-                                        <option value="QRIS">QRIS / E-Wallet</option>
+
+                                <div class="form-group" style="margin-bottom: 20px;">
+                                    <label for="ppob-type" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Jenis Layanan</label>
+                                    <select id="ppob-type" required style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                        <option value="ewallet">Top Up E-Wallet (Dana, OVO, dll)</option>
+                                        <option value="transfer">Transfer Bank (Mini ATM / BRILink)</option>
+                                        <option value="tarik">Tarik Tunai (Mini ATM / BRILink)</option>
+                                        <option value="pulsa">Pulsa & Paket Data</option>
+                                        <option value="pln">Listrik PLN (Token / Tagihan)</option>
+                                        <option value="lainnya">Tagihan Lain (PDAM, BPJS, dll)</option>
                                     </select>
                                 </div>
-                                <div class="form-group" style="margin: 0;">
-                                    <label for="ppob-source-account" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Sumber Saldo Akun*</label>
-                                    <select id="ppob-source-account" required style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
-                                        <!-- Populated via JS -->
-                                    </select>
+
+                                <button type="button" class="btn btn-primary btn-block" onclick="changePpobStep(2)">Lanjut ke Detail</button>
+                            </div>
+
+                            <!-- STEP 2: DETAIL -->
+                            <div class="ppob-step-group hidden" id="ppob-step-2">
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="ppob-provider" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Penyedia / Bank</label>
+                                        <input type="text" id="ppob-provider" placeholder="Contoh: DANA, BRI, PLN" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="ppob-target" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">No. Rekening / HP</label>
+                                        <input type="text" id="ppob-target" placeholder="Contoh: 0812xxxxxxxx" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 20px;">
+                                    <label for="ppob-amount" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Nominal / Saldo (Rp)</label>
+                                    <input type="number" id="ppob-amount" min="0" placeholder="Contoh: 50000" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                </div>
+
+                                <div style="display: flex; gap: 12px;">
+                                    <button type="button" class="btn btn-secondary-outline" onclick="changePpobStep(1)" style="flex: 1;">Sebelumnya</button>
+                                    <button type="button" class="btn btn-primary" onclick="changePpobStep(3)" style="flex: 1.5;">Lanjut ke Pembayaran</button>
                                 </div>
                             </div>
 
-                            <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--border-radius-sm); margin-bottom: 20px; font-size: 13px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Tagihan Dasar (Nominal + Admin):</span>
-                                    <span id="ppob-calc-base" style="color: var(--text-secondary);">Rp 0</span>
+                            <!-- STEP 3: BAYAR & KONFIRMASI -->
+                            <div class="ppob-step-group hidden" id="ppob-step-3">
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="ppob-fee" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Biaya Admin (Rp)</label>
+                                        <input type="number" id="ppob-fee" min="0" placeholder="Contoh: 2500" value="2500" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="ppob-cost" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Biaya Modal (Rp)</label>
+                                        <input type="number" id="ppob-cost" min="0" placeholder="Contoh: 500" value="500" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                    </div>
                                 </div>
-                                <div id="ppob-calc-qris-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;" class="hidden">
-                                    <span>Surcharge QRIS (Pembulatan):</span>
-                                    <span id="ppob-calc-qris-surcharge" style="color: var(--warning-color); font-weight: 600;">+Rp 0</span>
+                                
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="ppob-payment" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Metode Pembayaran</label>
+                                        <select id="ppob-payment" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                            <option value="Tunai">Tunai</option>
+                                            <option value="Transfer Bank">Transfer Bank</option>
+                                            <option value="QRIS">QRIS / E-Wallet</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="ppob-source-account" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Sumber Saldo Akun*</label>
+                                        <select id="ppob-source-account" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                            <!-- Populated via JS -->
+                                        </select>
+                                    </div>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Tagihan Pelanggan (Akhir):</span>
-                                    <strong id="ppob-calc-total" style="font-size: 15px; color: var(--text-primary);">Rp 0</strong>
+
+                                <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 14px; border-radius: var(--border-radius-sm); margin-bottom: 20px; font-size: 13px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <span>Tagihan Dasar (Nominal + Admin):</span>
+                                        <span id="ppob-calc-base" style="color: var(--text-secondary);">Rp 0</span>
+                                    </div>
+                                    <div id="ppob-calc-qris-row" style="display: flex; justify-content: space-between; margin-bottom: 8px;" class="hidden">
+                                        <span>Surcharge QRIS (Pembulatan):</span>
+                                        <span id="ppob-calc-qris-surcharge" style="color: var(--warning-color); font-weight: 600;">+Rp 0</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <span>Tagihan Pelanggan (Akhir):</span>
+                                        <strong id="ppob-calc-total" style="font-size: 15px; color: var(--text-primary);">Rp 0</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; color: var(--success-color);">
+                                        <span>Estimasi Keuntungan:</span>
+                                        <strong id="ppob-calc-profit" style="font-size: 15px;">Rp 0</strong>
+                                    </div>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; color: var(--success-color);">
-                                    <span>Estimasi Keuntungan:</span>
-                                    <strong id="ppob-calc-profit" style="font-size: 15px;">Rp 0</strong>
+
+                                <div style="display: flex; gap: 12px;">
+                                    <button type="button" class="btn btn-secondary-outline" onclick="changePpobStep(2)" style="flex: 1;">Sebelumnya</button>
+                                    <button type="submit" id="ppob-submit-btn" class="btn btn-primary" style="flex: 1.5; font-weight: 600;">Simpan Transaksi</button>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block">Simpan Transaksi PPOB</button>
                         </form>
                     </div>
 
@@ -877,6 +965,73 @@
                                     </tr>
                                 </thead>
                                 <tbody id="ppob-table-body">
+                                    <!-- Loaded dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Employee Attendance (Absensi) Page -->
+            <section id="page-attendance" class="page-section">
+                <div class="page-header-row">
+                    <div class="page-title">
+                        <h2>Absensi & Kehadiran Karyawan</h2>
+                        <p>Pencatatan jam masuk (Clock In) dan jam pulang (Clock Out) untuk shift kerja karyawan secara langsung</p>
+                    </div>
+                </div>
+
+                <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                    <!-- Column 1: Control Panel -->
+                    <div class="settings-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 24px;">
+                        <div class="settings-card-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                            <i data-lucide="user-check" style="color: var(--success-color);"></i>
+                            <h3 style="margin: 0; font-size: 16px;">Catat Kehadiran</h3>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label for="attendance-employee-select" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Pilih Nama Karyawan</label>
+                            <select id="attendance-employee-select" onchange="updateEmployeeStatusUI()" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                                <!-- Populated dynamically via JS -->
+                            </select>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 24px;">
+                            <button class="btn" onclick="clockInEmployee()" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #10b981; color: white; font-weight: 600; border: none; padding: 10px; border-radius: var(--border-radius-sm); cursor: pointer;">
+                                <i data-lucide="log-in" style="width: 16px; height: 16px;"></i>
+                                <span>Clock In</span>
+                            </button>
+                            <button class="btn" onclick="clockOutEmployee()" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #ef4444; color: white; font-weight: 600; border: none; padding: 10px; border-radius: var(--border-radius-sm); cursor: pointer;">
+                                <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+                                <span>Clock Out</span>
+                            </button>
+                        </div>
+
+                        <div class="attendance-status-card" id="attendance-current-status" style="margin-top: 20px; padding: 16px; border-radius: var(--border-radius-sm); background: var(--bg-tertiary); border: 1px solid var(--border-color); text-align: center; font-size: 13px; font-weight: 500;">
+                            Pilih karyawan untuk melihat status kehadiran hari ini.
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Attendance Logs Table -->
+                    <div class="settings-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 24px; display: flex; flex-direction: column;">
+                        <div class="settings-card-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                            <i data-lucide="calendar" style="color: var(--primary-color);"></i>
+                            <h3 style="margin: 0; font-size: 16px;">Riwayat Kehadiran Hari Ini</h3>
+                        </div>
+
+                        <div class="table-responsive" style="flex-grow: 1; max-height: 480px; overflow-y: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Karyawan</th>
+                                        <th>Waktu Masuk</th>
+                                        <th>Waktu Pulang</th>
+                                        <th>Durasi</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendance-table-body">
                                     <!-- Loaded dynamically via JS -->
                                 </tbody>
                             </table>

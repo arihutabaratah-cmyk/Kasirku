@@ -347,6 +347,10 @@ let tables = [];
 let promos = [];
 let auditLogs = [];
 let selectedTableId = "";
+let activeUser = "owner";
+let attendanceLogs = [];
+const DEFAULT_EMPLOYEES = ["Budi", "Siti", "Andi", "Dewi"];
+let opexAmount = 20000;
 
 const DEFAULT_TABLES = [
     { id: "T01", name: "Meja 01", capacity: 2, status: "kosong", currentOrderId: null },
@@ -397,7 +401,8 @@ const pages = {
     recipes: document.getElementById("page-recipes"),
     crm: document.getElementById("page-crm"),
     ppob: document.getElementById("page-ppob"),
-    tables: document.getElementById("page-tables")
+    tables: document.getElementById("page-tables"),
+    attendance: document.getElementById("page-attendance")
 };
 
 const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
@@ -566,6 +571,8 @@ function loadDatabase() {
     tables = JSON.parse(localStorage.getItem("kasirKu_tables")) || DEFAULT_TABLES;
     promos = JSON.parse(localStorage.getItem("kasirKu_promos")) || DEFAULT_PROMOS;
     auditLogs = JSON.parse(localStorage.getItem("kasirKu_audit_logs")) || [];
+    attendanceLogs = JSON.parse(localStorage.getItem("kasirKu_attendance_logs")) || [];
+    opexAmount = parseFloat(localStorage.getItem("kasirKu_opex")) || 20000;
     
     // Save defaults back to storage if empty
     if (!localStorage.getItem("kasirKu_settings")) localStorage.setItem("kasirKu_settings", JSON.stringify(settings));
@@ -592,6 +599,8 @@ function loadDatabase() {
     if (!localStorage.getItem("kasirKu_tables")) localStorage.setItem("kasirKu_tables", JSON.stringify(tables));
     if (!localStorage.getItem("kasirKu_promos")) localStorage.setItem("kasirKu_promos", JSON.stringify(promos));
     if (!localStorage.getItem("kasirKu_audit_logs")) localStorage.setItem("kasirKu_audit_logs", JSON.stringify(auditLogs));
+    if (!localStorage.getItem("kasirKu_attendance_logs")) localStorage.setItem("kasirKu_attendance_logs", JSON.stringify(attendanceLogs));
+    if (!localStorage.getItem("kasirKu_opex")) localStorage.setItem("kasirKu_opex", opexAmount.toString());
 }
 
 function saveProductsToStorage(skipGas = false) {
@@ -698,7 +707,12 @@ function updateHeldOrdersCountBadge() {
 }
 
 // --- Page Navigation ---
-function navigateToPage(pageName) {
+function navigateToPage(pageName, isQuiet = false) {
+    if (activeUser === "staff" && ["inventory", "analytics", "settings"].includes(pageName)) {
+        if (!isQuiet) alert("Akses Ditolak: Halaman ini terkunci untuk peran Staff Kasir. Silakan hubungi Owner/Manager.");
+        return;
+    }
+    
     activePage = pageName;
     
     // Auto collapse sidebar drawer on mobile
@@ -744,6 +758,10 @@ function navigateToPage(pageName) {
         renderTablesGrid();
     } else if (pageName === "recipes") {
         renderRecipesPage();
+    } else if (pageName === "attendance") {
+        populateAttendanceEmployees();
+        updateEmployeeStatusUI();
+        renderAttendanceLogs();
     }
     
     sfx.playBeep();
@@ -1471,6 +1489,21 @@ function simulateQrisSuccess() {
 
 // --- Submit & Save Transaction ---
 function processPayment() {
+    const submitBtn = document.getElementById("submit-payment-btn");
+    let originalText = "Konfirmasi & Bayar";
+    if (submitBtn) {
+        originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "<i class='spinner-icon' style='display:inline-block; animation:spin 1s linear infinite; margin-right:6px;'></i>Memproses...";
+    }
+    
+    const restoreBtn = () => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    };
+
     const grandTotalText = document.getElementById("chk-grand-total").textContent;
     const totalAmount = parseFloat(grandTotalText.replace(/[^0-9,-]/g, '').replace(/,00$/, ''));
 
@@ -1752,6 +1785,9 @@ function processPayment() {
 
     // Open receipt visual mockup
     openReceiptModal(newOrder);
+    
+    // Restore button
+    restoreBtn();
 }
 
 // --- Thermal Receipt Barcode Generator ---
@@ -2522,6 +2558,9 @@ function renderAnalytics() {
     renderVoidLogsTable();
     if (typeof renderAuditLogs === "function") {
         renderAuditLogs();
+    }
+    if (typeof renderPandL === "function") {
+        renderPandL();
     }
 }
 
@@ -3528,15 +3567,30 @@ function handleShiftSubmit(e) {
     }
 }
 
-function handleUserRoleChange(e) {
+function handleUserRoleChange(e, isInit = false) {
     activeUser = e.target.value;
-    sfx.playBeep();
+    if (!isInit) sfx.playBeep();
     
     const priceInputs = document.querySelectorAll("#product-form input, #product-form select");
     const saveProdBtn = document.getElementById("save-product-btn");
     const deleteBtn = document.getElementById("reset-system-data");
     
+    // Sidebar nav elements
+    const inventoryNav = document.getElementById("nav-inventory");
+    const analyticsNav = document.getElementById("nav-analytics");
+    const settingsNav = document.getElementById("nav-settings");
+    
     if (activeUser === "staff") {
+        // Hide restricted sidebar menus
+        if (inventoryNav) inventoryNav.style.display = "none";
+        if (analyticsNav) analyticsNav.style.display = "none";
+        if (settingsNav) settingsNav.style.display = "none";
+        
+        // Redirect if on restricted pages
+        if (["inventory", "analytics", "settings"].includes(activePage)) {
+            navigateToPage("cashier", isInit);
+        }
+
         // Limit staff capability in inventory edit price
         const priceField = document.getElementById("prod-price");
         if (priceField) {
@@ -3554,8 +3608,13 @@ function handleUserRoleChange(e) {
             b.classList.add("locked-field");
         });
         
-        alert("Akses Terbatas: Anda login sebagai Staff Kasir. Akses mengubah harga produk & mereset database dikunci.");
+        if (!isInit) alert("Akses Terbatas: Anda login sebagai Staff Kasir. Halaman Kelola Produk, Analisis, dan Pengaturan dinonaktifkan.");
     } else {
+        // Show all sidebar menus
+        if (inventoryNav) inventoryNav.style.display = "flex";
+        if (analyticsNav) analyticsNav.style.display = "flex";
+        if (settingsNav) settingsNav.style.display = "flex";
+
         const priceField = document.getElementById("prod-price");
         if (priceField) {
             priceField.classList.remove("locked-field");
@@ -3567,7 +3626,7 @@ function handleUserRoleChange(e) {
         document.querySelectorAll(".inventory-actions button, #add-product-btn").forEach(b => {
             b.classList.remove("locked-field");
         });
-        alert("Akses Penuh: Anda login sebagai Owner / Manager.");
+        if (!isInit) alert("Akses Penuh: Anda login sebagai Owner / Manager.");
     }
 }
 
@@ -5221,6 +5280,21 @@ function updatePpobLiveCalcs() {
 function handlePpobFormSubmit(e) {
     e.preventDefault();
     
+    const submitBtn = document.getElementById("ppob-submit-btn");
+    let originalText = "Simpan Transaksi";
+    if (submitBtn) {
+        originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "<i class='spinner-icon' style='display:inline-block; animation:spin 1s linear infinite; margin-right:6px;'></i>Memproses...";
+    }
+    
+    const restoreSubmitBtn = () => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    };
+    
     const type = document.getElementById("ppob-type").value;
     const provider = document.getElementById("ppob-provider").value.trim();
     const target = document.getElementById("ppob-target").value.trim();
@@ -5232,15 +5306,20 @@ function handlePpobFormSubmit(e) {
     
     if (amount <= 0) {
         alert("Nominal transaksi harus lebih besar dari 0!");
+        restoreSubmitBtn();
         return;
     }
     
     const sourceAcc = ppobAccounts.find(a => a.id === sourceAccountId);
-    if (!sourceAcc) return;
+    if (!sourceAcc) {
+        restoreSubmitBtn();
+        return;
+    }
     
     const totalDeduction = amount + cost;
     if (sourceAcc.balance < totalDeduction) {
         if (!confirm(`Saldo ${sourceAcc.name} tidak mencukupi untuk biaya modal transaksi (Dibutuhkan: ${formatPrice(totalDeduction)}, Saldo: ${formatPrice(sourceAcc.balance)}). Tetap lanjutkan?`)) {
+            restoreSubmitBtn();
             return;
         }
     }
@@ -5313,6 +5392,10 @@ function handlePpobFormSubmit(e) {
     // Refresh calculations and lists
     updatePpobLiveCalcs();
     renderPpobDashboard();
+    
+    // Reset wizard step & restore button
+    changePpobStep(1);
+    restoreSubmitBtn();
 }
 
 function clearPpobTransactions() {
@@ -6160,22 +6243,312 @@ function exportInventoryReportCSV() {
 
 function checkLowStockAlerts() {
     const lowStockItems = products.filter(p => p.stock <= 5);
+    const lowStockIngredients = ingredients.filter(ing => {
+        if (ing.unit === "g" || ing.unit === "ml") return ing.stock < 500;
+        return ing.stock < 10;
+    });
+
+    const totalLow = lowStockItems.length + lowStockIngredients.length;
     const statLowStock = document.getElementById("stat-low-stock");
     const statLowStockSub = document.getElementById("stat-low-stock-sub");
     
     if (statLowStock) {
-        statLowStock.textContent = lowStockItems.length;
+        statLowStock.textContent = totalLow;
     }
     
     if (statLowStockSub) {
-        if (lowStockItems.length > 0) {
-            statLowStockSub.textContent = `${lowStockItems.length} produk di bawah batas aman!`;
+        if (totalLow > 0) {
+            let detailMsg = [];
+            if (lowStockItems.length > 0) detailMsg.push(`${lowStockItems.length} produk`);
+            if (lowStockIngredients.length > 0) detailMsg.push(`${lowStockIngredients.length} bahan baku`);
+            statLowStockSub.textContent = `${detailMsg.join(" & ")} di bawah batas aman!`;
             statLowStockSub.style.color = "var(--danger-color)";
         } else {
             statLowStockSub.textContent = "Semua stok aman";
             statLowStockSub.style.color = "var(--success-color)";
         }
     }
+}
+
+// --- PPOB Wizard Stepper Logic ---
+let currentPpobStep = 1;
+
+function changePpobStep(step) {
+    sfx.playBeep();
+    
+    // Validate inputs before going forward
+    if (step > currentPpobStep) {
+        if (currentPpobStep === 1) {
+            // Step 1: Type selection & parser. No strict validation.
+        } else if (currentPpobStep === 2) {
+            const provider = document.getElementById("ppob-provider").value.trim();
+            const target = document.getElementById("ppob-target").value.trim();
+            const amount = parseFloat(document.getElementById("ppob-amount").value) || 0;
+            if (!provider || !target || amount <= 0) {
+                alert("Harap lengkapi semua bidang detail transaksi (Penyedia, No Rekening, dan Nominal) dengan benar!");
+                return;
+            }
+        }
+    }
+    
+    currentPpobStep = step;
+    
+    // Show/hide step groups
+    document.querySelectorAll(".ppob-step-group").forEach(el => {
+        el.classList.add("hidden");
+    });
+    const activeGroup = document.getElementById(`ppob-step-${step}`);
+    if (activeGroup) activeGroup.classList.remove("hidden");
+    
+    // Update stepper visual indicators
+    document.querySelectorAll(".stepper-node").forEach((node, idx) => {
+        const nodeIdx = idx + 1;
+        node.classList.remove("active", "completed");
+        if (nodeIdx < step) {
+            node.classList.add("completed");
+        } else if (nodeIdx === step) {
+            node.classList.add("active");
+        }
+    });
+    
+    // Update step line
+    const progressPercent = ((step - 1) / 2) * 100;
+    const stepLine = document.getElementById("ppob-step-line");
+    if (stepLine) stepLine.style.width = `${progressPercent}%`;
+}
+
+// --- Employee Attendance (Absensi) Logic ---
+function populateAttendanceEmployees() {
+    const select = document.getElementById("attendance-employee-select");
+    if (!select) return;
+    select.innerHTML = "";
+    
+    DEFAULT_EMPLOYEES.forEach(emp => {
+        const option = document.createElement("option");
+        option.value = emp;
+        option.textContent = emp;
+        select.appendChild(option);
+    });
+}
+
+function clockInEmployee() {
+    sfx.playBeep();
+    const select = document.getElementById("attendance-employee-select");
+    if (!select) return;
+    const empName = select.value;
+    
+    // Check if already clocked in today (where clockOut is null)
+    const activeLog = attendanceLogs.find(l => l.employee === empName && l.clockOut === null);
+    if (activeLog) {
+        alert(`Peringatan: Karyawan "${empName}" sudah melakukan Clock In pada pukul ${new Date(activeLog.clockIn).toLocaleTimeString("id-ID")}`);
+        return;
+    }
+    
+    const newLog = {
+        id: generateId("ATT"),
+        employee: empName,
+        clockIn: new Date().toISOString(),
+        clockOut: null,
+        duration: "",
+        status: "Aktif Bekerja"
+    };
+    
+    attendanceLogs.unshift(newLog);
+    localStorage.setItem("kasirKu_attendance_logs", JSON.stringify(attendanceLogs));
+    logActivity("Absensi Karyawan", `Clock In Karyawan: ${empName}`);
+    
+    sfx.playSuccess();
+    alert(`Sukses: ${empName} berhasil melakukan Clock In!`);
+    updateEmployeeStatusUI();
+    renderAttendanceLogs();
+}
+
+function clockOutEmployee() {
+    sfx.playBeep();
+    const select = document.getElementById("attendance-employee-select");
+    if (!select) return;
+    const empName = select.value;
+    
+    // Find active clock-in log
+    const activeLog = attendanceLogs.find(l => l.employee === empName && l.clockOut === null);
+    if (!activeLog) {
+        alert(`Kesalahan: Karyawan "${empName}" belum melakukan Clock In hari ini!`);
+        return;
+    }
+    
+    const clockOutTime = new Date().toISOString();
+    activeLog.clockOut = clockOutTime;
+    activeLog.status = "Selesai Shift";
+    
+    // Calculate duration
+    const diffMs = new Date(clockOutTime) - new Date(activeLog.clockIn);
+    const diffMins = Math.floor(diffMs / 60000);
+    const hrs = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    activeLog.duration = `${hrs} jam ${mins} menit`;
+    
+    localStorage.setItem("kasirKu_attendance_logs", JSON.stringify(attendanceLogs));
+    logActivity("Absensi Karyawan", `Clock Out Karyawan: ${empName} (Durasi Kerja: ${activeLog.duration})`);
+    
+    sfx.playSuccess();
+    alert(`Sukses: ${empName} berhasil melakukan Clock Out! Durasi kerja: ${activeLog.duration}`);
+    updateEmployeeStatusUI();
+    renderAttendanceLogs();
+}
+
+function updateEmployeeStatusUI() {
+    const select = document.getElementById("attendance-employee-select");
+    const statusCard = document.getElementById("attendance-current-status");
+    if (!select || !statusCard) return;
+    
+    const empName = select.value;
+    const activeLog = attendanceLogs.find(l => l.employee === empName && l.clockOut === null);
+    
+    if (activeLog) {
+        const timeStr = new Date(activeLog.clockIn).toLocaleTimeString("id-ID", {hour: '2-digit', minute:'2-digit'});
+        statusCard.innerHTML = `<span style="color:#10b981; font-weight:700;"><i data-lucide="check" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>Aktif Bekerja</span><br><small style="color:var(--text-secondary); margin-top:4px; display:block;">Clock In sejak ${timeStr}</small>`;
+    } else {
+        // Find last checkout log for today
+        const lastLog = attendanceLogs.find(l => l.employee === empName && l.clockOut !== null);
+        if (lastLog) {
+            const inTime = new Date(lastLog.clockIn).toLocaleTimeString("id-ID", {hour: '2-digit', minute:'2-digit'});
+            const outTime = new Date(lastLog.clockOut).toLocaleTimeString("id-ID", {hour: '2-digit', minute:'2-digit'});
+            statusCard.innerHTML = `<span style="color:var(--text-secondary);"><i data-lucide="minus-circle" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>Selesai Shift</span><br><small style="color:var(--text-secondary); margin-top:4px; display:block;">Shift: ${inTime} - ${outTime} (${lastLog.duration})</small>`;
+        } else {
+            statusCard.innerHTML = `<span style="color:var(--text-secondary); font-weight:600;"><i data-lucide="user-x" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>Belum Hadir</span><br><small style="color:var(--text-secondary); margin-top:4px; display:block;">Tidak ada catatan kehadiran hari ini</small>`;
+        }
+    }
+    lucide.createIcons();
+}
+
+function renderAttendanceLogs() {
+    const tbody = document.getElementById("attendance-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    // Group attendance logs by today
+    const today = new Date().toDateString();
+    const todayLogs = attendanceLogs.filter(l => new Date(l.clockIn).toDateString() === today);
+    
+    if (todayLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ada riwayat kehadiran hari ini.</td></tr>`;
+        return;
+    }
+    
+    todayLogs.forEach(l => {
+        const inTime = new Date(l.clockIn).toLocaleTimeString("id-ID", {hour: '2-digit', minute:'2-digit'});
+        const outTime = l.clockOut ? new Date(l.clockOut).toLocaleTimeString("id-ID", {hour: '2-digit', minute:'2-digit'}) : "-";
+        
+        let statusStyle = "color:#10b981; font-weight:700;";
+        if (l.status === "Selesai Shift") {
+            statusStyle = "color:var(--text-secondary);";
+        }
+        
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${l.employee}</strong></td>
+            <td>${inTime}</td>
+            <td>${outTime}</td>
+            <td>${l.duration || "-"}</td>
+            <td><span style="${statusStyle}">${l.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// --- Profit & Loss Dashboard Real-time Calculations ---
+function getIngredientUnitCost(ingId) {
+    // Arabica: 150/g, Susu: 20/ml, Sirup: 15/ml, Minyak: 15/ml, Beras: 15/g, Telur: 2000/pcs
+    const costs = {
+        "I-001": 150, // Arabica
+        "I-002": 20,  // Susu UHT
+        "I-003": 15,  // Sirup Gula Aren
+        "I-004": 15,  // Minyak Goreng
+        "I-005": 15,  // Beras
+        "I-006": 2000 // Telur
+    };
+    return costs[ingId] || 10; // default 10 per unit
+}
+
+function getProductCOGS(productId) {
+    const recipe = recipes[productId];
+    if (!recipe || recipe.length === 0) {
+        const prod = products.find(p => p.id === productId);
+        return prod ? prod.price * 0.45 : 0; // fallback HPP: 45%
+    }
+    
+    let totalCogs = 0;
+    recipe.forEach(r => {
+        const costPerUnit = getIngredientUnitCost(r.ingredientId);
+        totalCogs += r.quantity * costPerUnit;
+    });
+    return totalCogs;
+}
+
+function renderPandL() {
+    const plRevenueEl = document.getElementById("pl-revenue");
+    const plCogsEl = document.getElementById("pl-cogs");
+    const plOpexEl = document.getElementById("pl-opex");
+    const plNetProfitEl = document.getElementById("pl-net-profit");
+    
+    if (!plRevenueEl) return;
+    
+    let totalRev = 0;
+    let totalCogs = 0;
+    
+    orders.forEach(o => {
+        if (o.status !== "Dibatalkan") {
+            totalRev += o.total;
+            o.items.forEach(item => {
+                const itemCogs = getProductCOGS(item.id);
+                totalCogs += itemCogs * item.quantity;
+            });
+        }
+    });
+
+    if (totalRev === 0) {
+        totalRev = 1950000;
+        totalCogs = 780000; // ~40% HPP
+    }
+    
+    const netProfit = totalRev - totalCogs - opexAmount;
+    
+    plRevenueEl.textContent = formatPrice(totalRev);
+    plCogsEl.textContent = formatPrice(totalCogs);
+    plOpexEl.textContent = formatPrice(opexAmount);
+    plNetProfitEl.textContent = formatPrice(netProfit);
+    
+    // Update progress bars
+    const plBarNet = document.getElementById("pl-bar-net-profit");
+    const plBarCogs = document.getElementById("pl-bar-cogs");
+    const plBarOpex = document.getElementById("pl-bar-opex");
+    
+    if (plBarNet && plBarCogs && plBarOpex) {
+        const totalSum = totalRev || 1;
+        const percentNet = Math.max(0, (netProfit / totalSum) * 100);
+        const percentCogs = (totalCogs / totalSum) * 100;
+        const percentOpex = (opexAmount / totalSum) * 100;
+        
+        plBarNet.style.width = `${percentNet}%`;
+        plBarNet.textContent = percentNet > 10 ? `Laba Bersih (${percentNet.toFixed(0)}%)` : "";
+        
+        plBarCogs.style.width = `${percentCogs}%`;
+        plBarCogs.textContent = percentCogs > 10 ? `HPP (${percentCogs.toFixed(0)}%)` : "";
+        
+        plBarOpex.style.width = `${percentOpex}%`;
+        plBarOpex.textContent = percentOpex > 10 ? `Ops (${percentOpex.toFixed(0)}%)` : "";
+    }
+}
+
+function adjustOpex() {
+    const current = opexAmount;
+    const input = prompt("Masukkan nilai Biaya Operasional bulanan (Rp):", current);
+    if (input === null) return;
+    const parsed = parseFloat(input) || 0;
+    opexAmount = parsed;
+    localStorage.setItem("kasirKu_opex", opexAmount.toString());
+    logActivity("Ubah Konfigurasi", `Mengubah biaya operasional menjadi ${formatPrice(opexAmount)}`);
+    renderPandL();
 }
 
 // Expose camera, file and utility functions globally
@@ -6195,6 +6568,14 @@ window.sendReceiptToWhatsApp = sendReceiptToWhatsApp;
 window.exportSalesReportCSV = exportSalesReportCSV;
 window.exportInventoryReportCSV = exportInventoryReportCSV;
 window.handleCartCustomerTypeChange = handleCartCustomerTypeChange;
+window.changePpobStep = changePpobStep;
+window.clockInEmployee = clockInEmployee;
+window.clockOutEmployee = clockOutEmployee;
+window.updateEmployeeStatusUI = updateEmployeeStatusUI;
+window.adjustOpex = adjustOpex;
+window.renderPandL = renderPandL;
+window.populateAttendanceEmployees = populateAttendanceEmployees;
+window.renderAttendanceLogs = renderAttendanceLogs;
 
 // --- App Initialization ---
 window.addEventListener("DOMContentLoaded", () => {
@@ -6216,6 +6597,13 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     
     registerEventListeners();
+    
+    // Initial user role setup
+    const roleSel = document.getElementById("user-role-selector");
+    if (roleSel) {
+        roleSel.value = activeUser;
+        handleUserRoleChange({ target: { value: activeUser } }, true);
+    }
     
     // Register PWA Service Worker for offline support
     if ("serviceWorker" in navigator) {

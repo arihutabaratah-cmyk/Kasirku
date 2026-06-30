@@ -2638,13 +2638,36 @@ textarea {
 }
 
 .sync-status-badge.offline {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
 }
 
 .sync-status-badge.syncing {
     background: rgba(59, 130, 246, 0.15);
     color: #3b82f6;
+}
+
+/* --- PPOB Stepper Wizard --- */
+.ppob-stepper {
+    position: relative;
+}
+.stepper-node .step-num {
+    transition: all 0.3s ease;
+}
+.stepper-node.active .step-num {
+    background: var(--primary-color) !important;
+    color: white !important;
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+.stepper-node.completed .step-num {
+    background: var(--success-color) !important;
+    color: white !important;
+}
+.ppob-step-group {
+    transition: all 0.25s ease-in-out;
+}
+.ppob-step-group.hidden {
+    display: none !important;
 }
 
 .status-dot {
