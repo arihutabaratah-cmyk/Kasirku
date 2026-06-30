@@ -2585,10 +2585,16 @@ function renderAnalytics() {
 function populateSettingsForm() {
     const elStoreName = document.getElementById("set-store-name");
     if (!elStoreName) return; // Elements not yet in DOM
-    elStoreName.value = settings.storeName;
-    document.getElementById("set-store-tagline").value = settings.tagline;
-    document.getElementById("set-store-address").value = settings.address;
-    document.getElementById("set-store-phone").value = settings.phone;
+    elStoreName.value = settings.storeName || "";
+    
+    const elTagline = document.getElementById("set-store-tagline");
+    if (elTagline) elTagline.value = settings.tagline || "";
+    
+    const elAddress = document.getElementById("set-store-address");
+    if (elAddress) elAddress.value = settings.address || "";
+    
+    const elPhone = document.getElementById("set-store-phone");
+    if (elPhone) elPhone.value = settings.phone || "";
     
     // Preview store logo
     updateStoreLogoPreview();
