@@ -1863,6 +1863,11 @@ function openReceiptModal(order) {
     document.getElementById("rec-date").textContent = dateFormatted;
     document.getElementById("rec-customer").textContent = order.customer;
 
+    const elCashier = document.getElementById("rec-cashier");
+    if (elCashier) {
+        elCashier.textContent = activeUser === "owner" ? "Owner (Admin)" : "Staff";
+    }
+
     // Items list
     const itemsList = document.getElementById("rec-items-list");
     itemsList.innerHTML = "";
@@ -5703,7 +5708,7 @@ function printPpobReceipt(txId) {
     const dateObj = new Date(tx.timestamp);
     const dateFormatted = dateObj.toLocaleDateString("id-ID") + " " + dateObj.toLocaleTimeString("id-ID", {hour: '2-digit', minute:'2-digit'});
     document.getElementById("ppob-rec-date").textContent = dateFormatted;
-    document.getElementById("ppob-rec-cashier").textContent = settings.cashierName || "Administrator";
+    document.getElementById("ppob-rec-cashier").textContent = activeUser === "owner" ? "Owner (Admin)" : "Staff";
     
     // Populate service type labels
     let serviceLabel = "PPOB";
