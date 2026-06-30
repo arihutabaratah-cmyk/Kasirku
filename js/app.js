@@ -2136,6 +2136,15 @@ function openAddProductModal() {
     document.getElementById("prod-id").value = "";
     const container = document.getElementById("product-modifiers-container");
     if (container) container.innerHTML = "";
+    
+    // Reset image preview state
+    const previewImg = document.getElementById("prod-image-preview");
+    const previewPlaceholder = document.getElementById("prod-image-preview-placeholder");
+    const btnRemove = document.getElementById("btn-remove-prod-image");
+    if (previewImg) previewImg.style.display = "none";
+    if (previewPlaceholder) previewPlaceholder.style.display = "block";
+    if (btnRemove) btnRemove.style.display = "none";
+
     document.getElementById("modal-product").classList.add("active");
     sfx.playBeep();
 }
@@ -2153,6 +2162,26 @@ function openEditProductModal(productId) {
     document.getElementById("prod-stock").value = product.stock;
     document.getElementById("prod-sku").value = product.sku || "";
     document.getElementById("prod-image").value = product.image || "";
+
+    // Set image preview state
+    const previewImg = document.getElementById("prod-image-preview");
+    const previewPlaceholder = document.getElementById("prod-image-preview-placeholder");
+    const btnRemove = document.getElementById("btn-remove-prod-image");
+    if (product.image) {
+        if (previewImg) {
+            previewImg.src = product.image;
+            previewImg.style.display = "block";
+        }
+        if (previewPlaceholder) previewPlaceholder.style.display = "none";
+        if (btnRemove) btnRemove.style.display = "inline-flex";
+    } else {
+        if (previewImg) {
+            previewImg.src = "";
+            previewImg.style.display = "none";
+        }
+        if (previewPlaceholder) previewPlaceholder.style.display = "block";
+        if (btnRemove) btnRemove.style.display = "none";
+    }
 
     renderProductModifiersBuilder(product.modifiers || []);
 
@@ -5488,6 +5517,207 @@ function switchScannerCamera() {
 window.startCameraScan = startCameraScan;
 window.stopCameraScan = stopCameraScan;
 window.switchScannerCamera = switchScannerCamera;
+
+// --- Product Camera Capture & Image Utility Functions ---
+let productCameraStream = null;
+let productCameras = [];
+let activeProductCameraIndex = 0;
+
+async function openProductCamera() {
+    sfx.playBeep();
+    const modal = document.getElementById("modal-product-camera");
+    if (modal) modal.classList.add("active");
+
+    const statusEl = document.getElementById("product-camera-status");
+    if (statusEl) statusEl.textContent = "Meminta izin kamera...";
+
+    try {
+        // Stop any active stream first
+        if (productCameraStream) {
+            productCameraStream.getTracks().forEach(track => track.stop());
+        }
+
+        // Get video devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        productCameras = devices.filter(device => device.kind === 'videoinput');
+
+        if (productCameras.length === 0) {
+            if (statusEl) statusEl.textContent = "Kamera tidak terdeteksi.";
+            return;
+        }
+
+        // Select the back camera if available, otherwise the first camera
+        let backCamIndex = productCameras.findIndex(device => 
+            device.label.toLowerCase().includes('back') || 
+            device.label.toLowerCase().includes('environment')
+        );
+        activeProductCameraIndex = backCamIndex !== -1 ? backCamIndex : 0;
+
+        await startProductCameraWithId(productCameras[activeProductCameraIndex].deviceId);
+
+    } catch (err) {
+        console.error("Gagal mengakses kamera:", err);
+        if (statusEl) statusEl.textContent = "Akses kamera ditolak atau tidak didukung.";
+        sfx.playError();
+    }
+}
+
+async function startProductCameraWithId(deviceId) {
+    const statusEl = document.getElementById("product-camera-status");
+    const video = document.getElementById("product-camera-video");
+
+    const constraints = {
+        video: {
+            deviceId: deviceId ? { exact: deviceId } : undefined,
+            width: { ideal: 640 },
+            height: { ideal: 640 },
+            facingMode: deviceId ? undefined : "environment"
+        }
+    };
+
+    try {
+        if (productCameraStream) {
+            productCameraStream.getTracks().forEach(track => track.stop());
+        }
+
+        productCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (video) {
+            video.srcObject = productCameraStream;
+            video.onloadedmetadata = () => {
+                if (statusEl) statusEl.textContent = "Kamera Aktif - Ketuk 'Ambil Foto'";
+            };
+        }
+    } catch (err) {
+        console.error("Gagal mengaktifkan device kamera:", err);
+        if (statusEl) statusEl.textContent = "Gagal memulai video kamera.";
+    }
+}
+
+function closeProductCamera() {
+    const modal = document.getElementById("modal-product-camera");
+    if (modal) modal.classList.remove("active");
+
+    if (productCameraStream) {
+        productCameraStream.getTracks().forEach(track => track.stop());
+        productCameraStream = null;
+    }
+}
+
+async function switchProductCamera() {
+    if (productCameras.length <= 1) {
+        sfx.playBeep();
+        return;
+    }
+    sfx.playBeep();
+    activeProductCameraIndex = (activeProductCameraIndex + 1) % productCameras.length;
+    await startProductCameraWithId(productCameras[activeProductCameraIndex].deviceId);
+}
+
+function captureProductPhoto() {
+    const video = document.getElementById("product-camera-video");
+    const canvas = document.getElementById("product-camera-canvas");
+    
+    if (!video || !canvas || !productCameraStream) return;
+
+    sfx.playSuccess();
+
+    const ctx = canvas.getContext("2d");
+    const videoWidth = video.videoWidth || video.clientWidth;
+    const videoHeight = video.videoHeight || video.clientHeight;
+    
+    // Crop center square
+    const size = Math.min(videoWidth, videoHeight);
+    const startX = (videoWidth - size) / 2;
+    const startY = (videoHeight - size) / 2;
+
+    canvas.width = 400;
+    canvas.height = 400;
+
+    ctx.drawImage(video, startX, startY, size, size, 0, 0, 400, 400);
+
+    // Compress as JPEG base64 (60% quality)
+    const base64Image = canvas.toDataURL("image/jpeg", 0.6);
+
+    // Update form
+    document.getElementById("prod-image").value = base64Image;
+    updateProductImagePreview(base64Image);
+
+    closeProductCamera();
+}
+
+function handleProductFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    sfx.playBeep();
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            
+            // Crop center square and resize
+            const size = Math.min(img.width, img.height);
+            const startX = (img.width - size) / 2;
+            const startY = (img.height - size) / 2;
+
+            canvas.width = 400;
+            canvas.height = 400;
+
+            ctx.drawImage(img, startX, startY, size, size, 0, 0, 400, 400);
+            
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+            document.getElementById("prod-image").value = compressedBase64;
+            updateProductImagePreview(compressedBase64);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateProductImagePreview(src) {
+    const previewImg = document.getElementById("prod-image-preview");
+    const previewPlaceholder = document.getElementById("prod-image-preview-placeholder");
+    const btnRemove = document.getElementById("btn-remove-prod-image");
+
+    if (src) {
+        if (previewImg) {
+            previewImg.src = src;
+            previewImg.style.display = "block";
+        }
+        if (previewPlaceholder) previewPlaceholder.style.display = "none";
+        if (btnRemove) btnRemove.style.display = "inline-flex";
+    } else {
+        if (previewImg) {
+            previewImg.src = "";
+            previewImg.style.display = "none";
+        }
+        if (previewPlaceholder) previewPlaceholder.style.display = "block";
+        if (btnRemove) btnRemove.style.display = "none";
+    }
+}
+
+function removeProductImage() {
+    sfx.playBeep();
+    document.getElementById("prod-image").value = "";
+    document.getElementById("prod-image-file").value = "";
+    updateProductImagePreview("");
+}
+
+function handleProductImageUrlChange() {
+    const url = document.getElementById("prod-image").value.trim();
+    updateProductImagePreview(url);
+}
+
+// Expose camera and file functions globally
+window.openProductCamera = openProductCamera;
+window.closeProductCamera = closeProductCamera;
+window.switchProductCamera = switchProductCamera;
+window.captureProductPhoto = captureProductPhoto;
+window.handleProductFileSelect = handleProductFileSelect;
+window.removeProductImage = removeProductImage;
+window.handleProductImageUrlChange = handleProductImageUrlChange;
 
 // --- App Initialization ---
 window.addEventListener("DOMContentLoaded", () => {

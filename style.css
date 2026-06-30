@@ -3556,3 +3556,35 @@ button.btn-close,
         font-size: 13px !important;
     }
 }
+
+/* --- Product Image & Camera CSS Styling --- */
+.prod-image-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.prod-image-preview-box {
+    width: 80px;
+    height: 80px;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.prod-image-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#product-camera-container {
+    position: relative;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+}

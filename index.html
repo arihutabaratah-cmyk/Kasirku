@@ -1386,9 +1386,29 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="prod-image">URL Foto Produk</label>
-                            <input type="text" id="prod-image" placeholder="https://images.unsplash.com/...">
-                            <span class="form-help">Biarkan kosong untuk menggunakan gambar default.</span>
+                            <label for="prod-image">Foto Produk</label>
+                            <div class="prod-image-input-wrapper">
+                                <div class="prod-image-preview-box" id="prod-image-preview-box">
+                                    <img id="prod-image-preview" src="" alt="Preview" style="display:none; width:100%; height:100%; object-fit:cover; border-radius: var(--border-radius-sm);">
+                                    <span id="prod-image-preview-placeholder" style="font-size: 11px; color: var(--text-secondary); text-align: center; padding: 8px;">Belum ada foto</span>
+                                </div>
+                                <div class="prod-image-actions">
+                                    <button type="button" class="btn btn-sm btn-primary-outline" onclick="openProductCamera()" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 5px;">
+                                        <i data-lucide="camera" style="width: 14px; height: 14px;"></i>
+                                        <span>Ambil Foto</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-secondary-outline" onclick="document.getElementById('prod-image-file').click()" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 5px;">
+                                        <i data-lucide="image" style="width: 14px; height: 14px;"></i>
+                                        <span>Pilih File</span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger-outline" id="btn-remove-prod-image" onclick="removeProductImage()" style="font-size: 11px; padding: 6px 10px; display: none; align-items: center; gap: 5px;">
+                                        <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                                        <span>Hapus</span>
+                                    </button>
+                                    <input type="file" id="prod-image-file" accept="image/*" style="display:none;" onchange="handleProductFileSelect(event)">
+                                </div>
+                                <input type="text" id="prod-image" placeholder="Atau paste URL gambar..." style="font-size: 11px; margin-top: 6px;" onchange="handleProductImageUrlChange()">
+                            </div>
                         </div>
 
                         <!-- Visual Modifier Builder -->
@@ -1760,6 +1780,38 @@
                         <span>Ganti Kamera</span>
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="stopCameraScan()" style="font-size: 12px; padding: 8px 16px;">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 13. PRODUCT CAMERA CAPTURE MODAL -->
+    <div class="modal" id="modal-product-camera">
+        <div class="modal-dialog modal-small" style="max-width: 450px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i data-lucide="camera" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>Ambil Foto Produk</h3>
+                    <button class="btn-close modal-close-btn" onclick="closeProductCamera()"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 16px; text-align: center;">
+                    <div id="product-camera-container" style="width: 100%; max-width: 380px; margin: 0 auto; overflow: hidden; border-radius: var(--border-radius-md); border: 2px solid var(--border-color); background: #000; position: relative; aspect-ratio: 1/1;">
+                        <video id="product-camera-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <canvas id="product-camera-canvas" style="display: none;"></canvas>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <span id="product-camera-status" style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">Menghubungkan Kamera...</span>
+                    </div>
+                </div>
+                <div class="modal-footer" style="display: flex; justify-content: space-between; gap: 8px;">
+                    <button type="button" class="btn btn-secondary-outline" id="btn-product-camera-switch" onclick="switchProductCamera()" style="font-size: 12px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                        <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+                        <span>Ganti Kamera</span>
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="captureProductPhoto()" style="font-size: 12px; padding: 8px 20px; display: inline-flex; align-items: center; gap: 6px;">
+                        <i data-lucide="aperture" style="width: 14px; height: 14px;"></i>
+                        <span>Ambil Foto</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeProductCamera()" style="font-size: 12px; padding: 8px 16px;">Batal</button>
                 </div>
             </div>
         </div>
