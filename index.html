@@ -63,6 +63,10 @@
                     <i data-lucide="chef-hat"></i>
                     <span>Dapur (KDS)</span>
                 </a>
+                <a href="#" class="nav-item" data-page="tables" id="nav-tables">
+                    <i data-lucide="layout"></i>
+                    <span>Manajemen Meja</span>
+                </a>
                 <a href="#" class="nav-item" data-page="recipes" id="nav-recipes">
                     <i data-lucide="clipboard-list"></i>
                     <span>Resep & Bahan</span>
@@ -227,13 +231,8 @@
                             <div class="cart-header" style="border-bottom:none;">
                                 <div class="cart-customer-row">
                                     <div class="cart-customer">
-                                        <select id="cart-customer-type">
-                                            <option value="Pelanggan Umum">Pelanggan Umum</option>
-                                            <option value="Meja 01">Meja 01</option>
-                                            <option value="Meja 02">Meja 02</option>
-                                            <option value="Meja 03">Meja 03</option>
-                                            <option value="Meja 04">Meja 04</option>
-                                            <option value="Take Away">Bawa Pulang (Takeaway)</option>
+                                        <select id="cart-customer-type" onchange="handleCartCustomerTypeChange()">
+                                            <!-- Dynamically loaded from database -->
                                         </select>
                                     </div>
                                     <div class="cart-member-select">
@@ -338,6 +337,68 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Table Management Page -->
+            <section id="page-tables" class="page-section">
+                <div class="page-header-row">
+                    <div class="page-title">
+                        <h2>Manajemen Tata Letak Meja</h2>
+                        <p>Pantau keterisian meja dan alur pelayanan pelanggan Dine-In secara langsung</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="openAddTableModal()">
+                            <i data-lucide="plus"></i>
+                            <span>Tambah Meja</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table Status Stats Grid -->
+                <div class="metrics-grid" style="margin-bottom: 24px;">
+                    <div class="metric-card">
+                        <div class="metric-icon bg-primary-soft" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="layout"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span>Total Meja</span>
+                            <h3 id="stat-total-tables">0</h3>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon bg-success-soft" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="check-circle"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span>Meja Kosong</span>
+                            <h3 id="stat-empty-tables">0</h3>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon bg-danger-soft" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span>Meja Terisi</span>
+                            <h3 id="stat-occupied-tables">0</h3>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon bg-warning-soft" style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="pocket"></i>
+                        </div>
+                        <div class="metric-info">
+                            <span>Butuh Dibersihkan</span>
+                            <h3 id="stat-dirty-tables">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-card" style="padding: 24px;">
+                    <div id="tables-grid-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+                        <!-- Loaded dynamically via JS -->
                     </div>
                 </div>
             </section>
@@ -583,6 +644,57 @@
                                 </tr>
                             </thead>
                             <tbody id="void-audit-logs-table-body">
+                                <!-- Loaded dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Simple Accounting & Excel/CSV Export Section -->
+                <div class="void-log-card" style="margin-top: 24px;">
+                    <div class="chart-header-row" style="margin-bottom: 8px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;"><i data-lucide="file-spreadsheet" style="width: 16px; height: 16px; color: var(--primary-color);"></i>Akuntansi & Ekspor Laporan Bulanan</h3>
+                        <span style="font-size: 10px; color: var(--primary-color); background: var(--primary-glow); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Ekspor Bulanan</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+                        Unduh laporan pembukuan bulanan, omzet kotor, PPN, dan saldo akhir PPOB dalam format CSV spreadsheet.
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                        <button class="btn btn-sm btn-primary" onclick="exportSalesReportCSV()" style="font-size: 11px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                            <span>Ekspor Laporan Penjualan (CSV)</span>
+                        </button>
+                        <button class="btn btn-sm btn-secondary-outline" onclick="exportInventoryReportCSV()" style="font-size: 11px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                            <span>Ekspor Inventaris Produk (CSV)</span>
+                        </button>
+                        <button class="btn btn-sm btn-warning-outline" onclick="window.print()" style="font-size: 11px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i data-lucide="printer" style="width: 14px; height: 14px;"></i>
+                            <span>Cetak Laporan Lengkap (PDF)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Full Activity Audit Log Card -->
+                <div class="void-log-card" style="margin-top: 24px;">
+                    <div class="chart-header-row" style="margin-bottom: 8px;">
+                        <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;"><i data-lucide="shield" style="width: 16px; height: 16px; color: var(--success-color);"></i>Log Audit Keamanan & Pencegahan Fraud</h3>
+                        <span style="font-size: 10px; color: var(--success-color); background: var(--success-glow); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Security Trail</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">
+                        Catatan lengkap seluruh aktivitas sensitif yang dilakukan oleh staf (termasuk edit transaksi, hapus produk, dan pembukaan/penutupan shift).
+                    </p>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="data-table" style="font-size: 12px; width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Pengguna</th>
+                                    <th>Tindakan / Aksi</th>
+                                    <th>Detail Deskripsi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-audit-logs-table-body">
                                 <!-- Loaded dynamically via JS -->
                             </tbody>
                         </table>
@@ -1328,6 +1440,10 @@
                     </div>
                 </div>
                 <div class="modal-footer hide-on-print">
+                    <button class="btn btn-success-outline" id="whatsapp-receipt-btn" onclick="sendReceiptToWhatsApp()" style="border-color: #25d366; color: #25d366; background: rgba(37, 211, 102, 0.05); display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                        <i data-lucide="message-circle" style="width: 16px; height: 16px;"></i>
+                        <span>Kirim WA</span>
+                    </button>
                     <button class="btn btn-secondary-outline" id="print-receipt-btn">
                         <i data-lucide="printer"></i>
                         <span>Cetak Struk (Print)</span>
@@ -1813,6 +1929,37 @@
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="closeProductCamera()" style="font-size: 12px; padding: 8px 16px;">Batal</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 14. ADD TABLE MODAL -->
+    <div class="modal" id="modal-table">
+        <div class="modal-dialog modal-small" style="max-width: 400px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-table-title">Tambah Meja Baru</h3>
+                    <button class="btn-close modal-close-btn" onclick="closeTableModal()"><i data-lucide="x"></i></button>
+                </div>
+                <form id="table-form" onsubmit="saveTable(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="table-id" value="">
+                        
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label for="table-name">Nama/Nomor Meja*</label>
+                            <input type="text" id="table-name" required placeholder="Contoh: Meja 08">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="table-capacity">Kapasitas Meja (Kursi)*</label>
+                            <input type="number" id="table-capacity" required min="1" max="50" value="4">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary-outline" onclick="closeTableModal()">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan Meja</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

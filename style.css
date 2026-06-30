@@ -3588,3 +3588,19 @@ button.btn-close,
     position: relative;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
 }
+
+/* --- Table Status Badge Styling --- */
+.status-badge.status-empty {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+}
+
+.status-badge.status-occupied {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+}
+
+.status-badge.status-dirty {
+    background: rgba(241, 196, 15, 0.15);
+    color: #f1c40f;
+}
