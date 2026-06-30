@@ -2096,10 +2096,18 @@ textarea {
     .modal-header,
     .modal-footer,
     .hide-on-print,
-    .modal {
+    .modal:not(.active) {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
+    }
+
+    .modal.active {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        background: transparent !important;
+        position: static !important;
     }
 
     .modal-body {
@@ -2109,7 +2117,8 @@ textarea {
         max-height: none !important;
     }
 
-    #printable-receipt {
+    #printable-receipt,
+    #printable-ppob-receipt {
         display: block !important;
         position: absolute;
         left: 0;
@@ -2125,7 +2134,9 @@ textarea {
     }
 
     #printable-receipt::before,
-    #printable-receipt::after {
+    #printable-receipt::after,
+    #printable-ppob-receipt::before,
+    #printable-ppob-receipt::after {
         display: none !important;
         /* Hide jagged card styling on real receipt printing */
     }
@@ -3626,4 +3637,79 @@ button.btn-close,
 .status-badge.status-dirty {
     background: rgba(241, 196, 15, 0.15);
     color: #f1c40f;
+}
+
+/* --- PPOB OCR Dropzone & Loader Styling --- */
+.ocr-dropzone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 18px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--input-bg);
+    position: relative;
+}
+
+.ocr-dropzone:hover, 
+.ocr-dropzone.dragover {
+    border-color: var(--primary-color) !important;
+    background: var(--primary-glow) !important;
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.ocr-dropzone .dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.ocr-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(9, 13, 22, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-md);
+    z-index: 10;
+}
+
+.ocr-loading-overlay.hidden {
+    display: none !important;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* PPOB Stepper visual additions */
+.stepper-node.completed .step-num {
+    background: var(--success-color) !important;
+    color: white !important;
+    border-color: var(--success-color) !important;
+}
+
+/* Receipt token styling */
+#ppob-rec-token-box {
+    border: 2px dashed #000;
+    color: #000;
+    background: transparent;
+    padding: 10px;
+    margin: 8px 0;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 1px;
 }

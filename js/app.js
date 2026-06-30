@@ -3965,6 +3965,86 @@ function registerEventListeners() {
     const ppobPaymentInput = document.getElementById("ppob-payment");
     if (ppobPaymentInput) ppobPaymentInput.addEventListener("change", updatePpobLiveCalcs);
 
+    // Toggle PLN token visibility based on type select change
+    const ppobTypeSelect = document.getElementById("ppob-type");
+    if (ppobTypeSelect) {
+        ppobTypeSelect.addEventListener("change", function() {
+            const tokenGroup = document.getElementById("ppob-token-group");
+            if (tokenGroup) {
+                if (this.value === "pln") {
+                    tokenGroup.classList.remove("hidden");
+                } else {
+                    tokenGroup.classList.add("hidden");
+                    const tokenInput = document.getElementById("ppob-token");
+                    if (tokenInput) tokenInput.value = "";
+                }
+            }
+            updatePpobLiveCalcs();
+        });
+    }
+
+    // Auto-format PLN token input (chunk of 4 digits separated by spaces)
+    const ppobTokenInput = document.getElementById("ppob-token");
+    if (ppobTokenInput) {
+        ppobTokenInput.addEventListener("input", function() {
+            let val = this.value.replace(/[^\d]/g, "");
+            if (val.length > 20) val = val.substring(0, 20);
+            
+            let formatted = [];
+            for (let i = 0; i < val.length; i += 4) {
+                formatted.push(val.substring(i, i + 4));
+            }
+            this.value = formatted.join(" ");
+        });
+    }
+
+    // OCR Drag & Drop Zone listeners
+    const dropzone = document.getElementById("ppob-ocr-dropzone");
+    const fileInput = document.getElementById("ppob-ocr-file");
+    
+    if (dropzone && fileInput) {
+        dropzone.addEventListener("click", () => fileInput.click());
+        
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                processOcrImage(e.target.files[0]);
+            }
+        });
+        
+        dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropzone.classList.add("dragover");
+        });
+        
+        dropzone.addEventListener("dragleave", () => {
+            dropzone.classList.remove("dragover");
+        });
+        
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("dragover");
+            if (e.dataTransfer.files.length > 0) {
+                processOcrImage(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // Listen to paste events globally on PPOB page
+        window.addEventListener("paste", (e) => {
+            const activePage = document.querySelector(".page-section.active");
+            if (activePage && activePage.id === "page-ppob") {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.indexOf('image/') !== -1) {
+                        const blob = item.getAsFile();
+                        processOcrImage(blob);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
     const ppobProofParser = document.getElementById("ppob-proof-parser");
     if (ppobProofParser) {
         ppobProofParser.addEventListener("input", (e) => {
@@ -3979,6 +4059,20 @@ function registerEventListeners() {
                 if (parsed.target) document.getElementById("ppob-target").value = parsed.target;
                 if (parsed.provider) document.getElementById("ppob-provider").value = parsed.provider;
                 if (parsed.type) document.getElementById("ppob-type").value = parsed.type;
+                
+                const tokenGroup = document.getElementById("ppob-token-group");
+                if (tokenGroup) {
+                    if (parsed.type === "pln") {
+                        tokenGroup.classList.remove("hidden");
+                    } else {
+                        tokenGroup.classList.add("hidden");
+                    }
+                }
+                
+                if (parsed.token) {
+                    const tokenInput = document.getElementById("ppob-token");
+                    if (tokenInput) tokenInput.value = parsed.token;
+                }
                 
                 e.target.style.borderColor = "var(--success-color)";
                 sfx.playSuccess();
@@ -4964,6 +5058,11 @@ function renderPpobDashboard() {
             </td>
             <td style="color: var(--success-color); font-weight: 600;">${formatPrice(tx.profit)}</td>
             <td><span class="badge badge-success">Sukses</span></td>
+            <td>
+                <button class="btn-icon" title="Cetak Struk" onclick="printPpobReceipt('${tx.id}')" style="color: var(--primary-color);">
+                    <i data-lucide="printer" style="width: 14px; height: 14px;"></i>
+                </button>
+            </td>
         `;
         tableBody.appendChild(tr);
     });
@@ -5153,6 +5252,7 @@ function parsePpobProofText(text) {
     let target = "";
     let provider = "";
     let type = "ewallet";
+    let token = "";
     
     // 1. Extract Amount
     const amountRegex = /(?:Rp\.?|sebesar|nominal|jumlah|nominal\stransaksi)[\s]*([\d\.,]+)/i;
@@ -5224,8 +5324,26 @@ function parsePpobProofText(text) {
         else if (textUpper.includes("CIMB")) provider = "CIMB";
         else provider = "TRANSFER";
     }
+
+    // 4. Extract PLN Token if type is PLN or if text contains a 20-digit number
+    const tokenRegex = /\b(\d{4})[\s-]*(\d{4})[\s-]*(\d{4})[\s-]*(\d{4})[\s-]*(\d{4})\b/;
+    const tokenMatch = text.match(tokenRegex);
+    if (tokenMatch) {
+        token = `${tokenMatch[1]} ${tokenMatch[2]} ${tokenMatch[3]} ${tokenMatch[4]} ${tokenMatch[5]}`;
+        type = "pln";
+        provider = "PLN";
+    } else {
+        const contiguousTokenRegex = /\b(\d{20})\b/;
+        const contiguousMatch = text.match(contiguousTokenRegex);
+        if (contiguousMatch) {
+            const tokenStr = contiguousMatch[1];
+            token = `${tokenStr.substring(0,4)} ${tokenStr.substring(4,8)} ${tokenStr.substring(8,12)} ${tokenStr.substring(12,16)} ${tokenStr.substring(16,20)}`;
+            type = "pln";
+            provider = "PLN";
+        }
+    }
     
-    return { amount, target, provider, type };
+    return { amount, target, provider, type, token };
 }
 
 function updatePpobLiveCalcs() {
@@ -5233,13 +5351,15 @@ function updatePpobLiveCalcs() {
     const feeInput = document.getElementById("ppob-fee");
     const costInput = document.getElementById("ppob-cost");
     const paymentSelect = document.getElementById("ppob-payment");
+    const typeSelect = document.getElementById("ppob-type");
     
-    if (!amountInput || !feeInput || !costInput || !paymentSelect) return;
+    if (!amountInput || !feeInput || !costInput || !paymentSelect || !typeSelect) return;
     
     const amount = parseFloat(amountInput.value) || 0;
     const fee = parseFloat(feeInput.value) || 0;
     const cost = parseFloat(costInput.value) || 0;
     const paymentMethod = paymentSelect.value;
+    const type = typeSelect.value;
     
     const baseTotal = amount + fee;
     let finalTotal = baseTotal;
@@ -5270,7 +5390,15 @@ function updatePpobLiveCalcs() {
         if (qrisRow) qrisRow.classList.add("hidden");
     }
     
-    const profit = (fee - cost) + qrisSurcharge;
+    // Conditional profit calculation:
+    // Pulsa & PLN: (Nominal + Admin + QRIS Surcharge) - Cost
+    // Others: (Admin + QRIS Surcharge) - Cost
+    let profit = 0;
+    if (type === "pulsa" || type === "pln") {
+        profit = (amount + fee + qrisSurcharge) - cost;
+    } else {
+        profit = (fee + qrisSurcharge) - cost;
+    }
     
     document.getElementById("ppob-calc-base").textContent = formatPrice(baseTotal);
     document.getElementById("ppob-calc-total").textContent = formatPrice(finalTotal);
@@ -5303,6 +5431,10 @@ function handlePpobFormSubmit(e) {
     const cost = parseFloat(document.getElementById("ppob-cost").value) || 0;
     const paymentMethod = document.getElementById("ppob-payment").value;
     const sourceAccountId = document.getElementById("ppob-source-account").value;
+    
+    // PLN token if available
+    const tokenInput = document.getElementById("ppob-token");
+    const tokenVal = tokenInput ? tokenInput.value.trim() : "";
     
     if (amount <= 0) {
         alert("Nominal transaksi harus lebih besar dari 0!");
@@ -5337,7 +5469,15 @@ function handlePpobFormSubmit(e) {
         qrisSurcharge = finalTotal - baseTotal;
     }
     
-    const profit = (fee - cost) + qrisSurcharge;
+    // Conditional profit calculation:
+    // Pulsa & PLN: (Nominal + Admin + QRIS Surcharge) - Cost
+    // Others: (Admin + QRIS Surcharge) - Cost
+    let profit = 0;
+    if (type === "pulsa" || type === "pln") {
+        profit = (amount + fee + qrisSurcharge) - cost;
+    } else {
+        profit = (fee + qrisSurcharge) - cost;
+    }
     
     // Deduct cost from source account
     sourceAcc.balance -= totalDeduction;
@@ -5366,7 +5506,8 @@ function handlePpobFormSubmit(e) {
         profit: profit,
         qrisSurcharge: qrisSurcharge,
         paymentMethod: paymentMethod,
-        sourceAccountId: sourceAccountId
+        sourceAccountId: sourceAccountId,
+        token: tokenVal
     };
     
     ppobTransactions.push(tx);
@@ -5378,13 +5519,23 @@ function handlePpobFormSubmit(e) {
     sfx.playSuccess();
     showSyncToast("Transaksi PPOB berhasil disimpan!");
     
-    // Reset forms
+    // Store the new transaction ID in the hidden field for Step 4 success screen
+    const successTxIdInput = document.getElementById("ppob-success-tx-id");
+    if (successTxIdInput) {
+        successTxIdInput.value = tx.id;
+    }
+    
+    // Reset form fields
     document.getElementById("ppob-transaction-form").reset();
     const parserBox = document.getElementById("ppob-proof-parser");
     if (parserBox) {
         parserBox.value = "";
         parserBox.style.borderColor = "";
     }
+    
+    // Hide token input group
+    const tokenGroup = document.getElementById("ppob-token-group");
+    if (tokenGroup) tokenGroup.classList.add("hidden");
     
     // Sync to Cloud
     syncPpobTransaction(tx);
@@ -5393,8 +5544,8 @@ function handlePpobFormSubmit(e) {
     updatePpobLiveCalcs();
     renderPpobDashboard();
     
-    // Reset wizard step & restore button
-    changePpobStep(1);
+    // Change wizard to success step (Step 4)
+    changePpobStep(4);
     restoreSubmitBtn();
 }
 
@@ -5405,6 +5556,175 @@ function clearPpobTransactions() {
         sfx.playSuccess();
         renderPpobDashboard();
     }
+}
+
+function printPpobReceipt(txId) {
+    const tx = ppobTransactions.find(t => t.id === txId);
+    if (!tx) {
+        alert("Transaksi tidak ditemukan!");
+        return;
+    }
+    
+    // Populate receipt header from settings
+    document.getElementById("ppob-rec-store-name").textContent = settings.storeName || "kasirKu Store";
+    document.getElementById("ppob-rec-store-tagline").textContent = settings.tagline || "";
+    document.getElementById("ppob-rec-store-address").textContent = settings.address || "";
+    document.getElementById("ppob-rec-store-phone").textContent = settings.phone ? "Telp: " + settings.phone : "";
+    
+    // Populate transaction metadata
+    document.getElementById("ppob-rec-tx-id").textContent = `#${tx.id}`;
+    
+    const dateObj = new Date(tx.timestamp);
+    const dateFormatted = dateObj.toLocaleDateString("id-ID") + " " + dateObj.toLocaleTimeString("id-ID", {hour: '2-digit', minute:'2-digit'});
+    document.getElementById("ppob-rec-date").textContent = dateFormatted;
+    document.getElementById("ppob-rec-cashier").textContent = settings.cashierName || "Administrator";
+    
+    // Populate service type labels
+    let serviceLabel = "PPOB";
+    if (tx.type === "ewallet") serviceLabel = "Top Up E-Wallet";
+    else if (tx.type === "transfer") serviceLabel = "Transfer Bank";
+    else if (tx.type === "tarik") serviceLabel = "Tarik Tunai";
+    else if (tx.type === "pulsa") serviceLabel = "Pulsa / Paket Data";
+    else if (tx.type === "pln") serviceLabel = "Listrik PLN";
+    else if (tx.type === "lainnya") serviceLabel = "Tagihan Lainnya";
+    
+    document.getElementById("ppob-rec-type").textContent = serviceLabel;
+    document.getElementById("ppob-rec-provider").textContent = tx.provider || "";
+    document.getElementById("ppob-rec-target").textContent = tx.target || "-";
+    
+    // Populate pricing
+    document.getElementById("ppob-rec-amount").textContent = formatPrice(tx.amount || 0);
+    document.getElementById("ppob-rec-fee").textContent = formatPrice(tx.fee || 0);
+    
+    // Surcharge QRIS
+    const surchargeRow = document.getElementById("ppob-rec-qris-surcharge-row");
+    const surchargeVal = tx.qrisSurcharge || 0;
+    if (surchargeVal > 0) {
+        if (surchargeRow) surchargeRow.classList.remove("hidden");
+        document.getElementById("ppob-rec-qris-surcharge").textContent = formatPrice(surchargeVal);
+    } else {
+        if (surchargeRow) surchargeRow.classList.add("hidden");
+    }
+    
+    // Grand total
+    const grandTotal = (tx.amount || 0) + (tx.fee || 0) + surchargeVal;
+    document.getElementById("ppob-rec-total-pay").textContent = formatPrice(grandTotal);
+    document.getElementById("ppob-rec-payment-method").textContent = tx.paymentMethod || "Tunai";
+    
+    // Token box for PLN
+    const tokenSection = document.getElementById("ppob-rec-token-section");
+    if (tx.type === "pln" && tx.token) {
+        if (tokenSection) tokenSection.classList.remove("hidden");
+        document.getElementById("ppob-rec-token-box").textContent = tx.token;
+    } else {
+        if (tokenSection) tokenSection.classList.add("hidden");
+    }
+    
+    // Open the modal
+    const modal = document.getElementById("modal-ppob-receipt");
+    if (modal) {
+        modal.classList.add("active");
+    }
+    
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+    
+    // Automatically trigger printing
+    setTimeout(() => {
+        window.print();
+    }, 300);
+}
+
+function closePpobReceiptModal() {
+    const modal = document.getElementById("modal-ppob-receipt");
+    if (modal) {
+        modal.classList.remove("active");
+    }
+}
+
+function resetPpobWizard() {
+    // Clear forms
+    document.getElementById("ppob-transaction-form").reset();
+    
+    // Hide token group
+    const tokenGroup = document.getElementById("ppob-token-group");
+    if (tokenGroup) tokenGroup.classList.add("hidden");
+    
+    const parserBox = document.getElementById("ppob-proof-parser");
+    if (parserBox) {
+        parserBox.value = "";
+        parserBox.style.borderColor = "";
+    }
+    
+    // Reset wizard back to Step 1
+    changePpobStep(1);
+    updatePpobLiveCalcs();
+}
+
+function processOcrImage(file) {
+    if (!file) return;
+    
+    const loadingOverlay = document.getElementById("ppob-ocr-loading");
+    const progressBar = document.getElementById("ppob-ocr-progress");
+    const progressPercent = document.getElementById("ppob-ocr-percent");
+    
+    if (loadingOverlay) loadingOverlay.classList.remove("hidden");
+    if (progressBar) progressBar.style.width = "0%";
+    if (progressPercent) progressPercent.textContent = "0%";
+    
+    Tesseract.recognize(
+        file,
+        'eng',
+        {
+            logger: m => {
+                if (m.status === 'recognizing text') {
+                    const percent = Math.round(m.progress * 100);
+                    if (progressBar) progressBar.style.width = `${percent}%`;
+                    if (progressPercent) progressPercent.textContent = `${percent}%`;
+                }
+            }
+        }
+    ).then(({ data: { text } }) => {
+        console.log("OCR parsed text:", text);
+        const parsed = parsePpobProofText(text);
+        if (parsed) {
+            // Fill fields
+            if (parsed.type) document.getElementById("ppob-type").value = parsed.type;
+            if (parsed.provider) document.getElementById("ppob-provider").value = parsed.provider;
+            if (parsed.target) document.getElementById("ppob-target").value = parsed.target;
+            if (parsed.amount) document.getElementById("ppob-amount").value = parsed.amount;
+            
+            // Toggle token visibility
+            const tokenGroup = document.getElementById("ppob-token-group");
+            if (tokenGroup) {
+                if (parsed.type === "pln") {
+                    tokenGroup.classList.remove("hidden");
+                } else {
+                    tokenGroup.classList.add("hidden");
+                }
+            }
+            
+            if (parsed.token) {
+                const tokenInput = document.getElementById("ppob-token");
+                if (tokenInput) tokenInput.value = parsed.token;
+            }
+            
+            showSyncToast("Bukti struk berhasil dipindai!");
+            sfx.playSuccess();
+            updatePpobLiveCalcs();
+            
+            // Auto advance to Step 2
+            changePpobStep(2);
+        } else {
+            alert("Gagal mengekstrak data dari struk. Pastikan gambar cukup jelas.");
+        }
+    }).catch(err => {
+        console.error("OCR Image Parse Error:", err);
+        alert("Terjadi kesalahan saat memproses gambar OCR: " + err.message);
+    }).finally(() => {
+        if (loadingOverlay) loadingOverlay.classList.add("hidden");
+    });
 }
 
 async function syncPpobTransaction(tx) {
@@ -5530,6 +5850,10 @@ window.switchPpobBalanceTab = switchPpobBalanceTab;
 window.handlePpobBalanceAdjust = handlePpobBalanceAdjust;
 window.handlePpobBalanceTransfer = handlePpobBalanceTransfer;
 window.parsePpobProofText = parsePpobProofText;
+window.printPpobReceipt = printPpobReceipt;
+window.closePpobReceiptModal = closePpobReceiptModal;
+window.resetPpobWizard = resetPpobWizard;
+window.processOcrImage = processOcrImage;
 
 // --- Mobile Layout Helpers ---
 function openSidebar() {
@@ -6288,6 +6612,16 @@ function changePpobStep(step) {
                 alert("Harap lengkapi semua bidang detail transaksi (Penyedia, No Rekening, dan Nominal) dengan benar!");
                 return;
             }
+            
+            // PLN validation: if pln, check token if filled
+            const type = document.getElementById("ppob-type").value;
+            if (type === "pln") {
+                const tokenInput = document.getElementById("ppob-token");
+                if (tokenInput && tokenInput.value.replace(/[^\d]/g, "").length > 0 && tokenInput.value.replace(/[^\d]/g, "").length !== 20) {
+                    alert("Token Listrik PLN harus 20 digit!");
+                    return;
+                }
+            }
         }
     }
     
@@ -6312,7 +6646,7 @@ function changePpobStep(step) {
     });
     
     // Update step line
-    const progressPercent = ((step - 1) / 2) * 100;
+    const progressPercent = ((step - 1) / 3) * 100;
     const stepLine = document.getElementById("ppob-step-line");
     if (stepLine) stepLine.style.width = `${progressPercent}%`;
 }

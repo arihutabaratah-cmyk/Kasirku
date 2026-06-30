@@ -811,11 +811,38 @@
                                 <div class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid var(--bg-secondary);">3</div>
                                 <span style="font-size: 10px; font-weight: 600;">Bayar</span>
                             </div>
+                            <div class="stepper-node" id="node-step-4" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                <div class="step-num" style="width: 26px; height: 26px; border-radius: 50%; background: var(--border-color); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid var(--bg-secondary);">4</div>
+                                <span style="font-size: 10px; font-weight: 600;">Sukses</span>
+                            </div>
                         </div>
 
                         <form id="ppob-transaction-form" onsubmit="handlePpobFormSubmit(event)">
                             <!-- STEP 1: LAYANAN -->
                             <div class="ppob-step-group" id="ppob-step-1">
+                                <!-- Screenshot OCR Dropzone -->
+                                <div class="form-group" style="margin-bottom: 16px;">
+                                    <label style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">
+                                        <i data-lucide="image" style="width: 13px; height: 13px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
+                                        Unggah / Tempel Screenshot Struk (Auto-Fill)
+                                    </label>
+                                    <div id="ppob-ocr-dropzone" class="ocr-dropzone" style="border: 2px dashed var(--border-color); border-radius: var(--border-radius-md); padding: 18px 10px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: var(--input-bg); position: relative;">
+                                        <input type="file" id="ppob-ocr-file" accept="image/*" style="display: none;">
+                                        <div class="dropzone-content">
+                                            <i data-lucide="upload-cloud" style="width: 26px; height: 26px; color: var(--text-secondary); margin-bottom: 6px; display: inline-block;"></i>
+                                            <p style="font-size: 11px; margin: 0; color: var(--text-secondary);">Seret struk ke sini, klik untuk pilih, atau tekan <strong>Ctrl + V</strong> untuk tempel</p>
+                                        </div>
+                                        <div class="ocr-loading-overlay hidden" id="ppob-ocr-loading" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: var(--border-radius-md); z-index: 5;">
+                                            <i data-lucide="loader-2" class="spinner" style="width: 20px; height: 20px; color: var(--primary-color); margin-bottom: 6px;"></i>
+                                            <span style="font-size: 11px; color: white;">Memindai struk...</span>
+                                            <div style="width: 70%; height: 4px; background: var(--border-color); border-radius: 2px; margin-top: 6px; overflow: hidden;">
+                                                <div id="ppob-ocr-progress" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.1s ease;"></div>
+                                            </div>
+                                            <span id="ppob-ocr-percent" style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Auto-Parse Receipt Bukti Transaksi -->
                                 <div class="form-group" style="margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 16px;">
                                     <label for="ppob-proof-parser" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);"><i data-lucide="clipboard" style="width: 13px; height: 13px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>Tempel Teks Bukti Struk (Auto-Fill)</label>
@@ -849,6 +876,11 @@
                                         <label for="ppob-target" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">No. Rekening / HP</label>
                                         <input type="text" id="ppob-target" placeholder="Contoh: 0812xxxxxxxx" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
                                     </div>
+                                </div>
+
+                                <div class="form-group hidden" id="ppob-token-group" style="margin-bottom: 16px;">
+                                    <label for="ppob-token" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Token Listrik PLN (20 Digit)</label>
+                                    <input type="text" id="ppob-token" maxlength="24" placeholder="Contoh: 1234 5678 9012 3456 7890" style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: bold; letter-spacing: 1px;">
                                 </div>
 
                                 <div class="form-group" style="margin-bottom: 20px;">
@@ -916,6 +948,26 @@
                                     <button type="submit" id="ppob-submit-btn" class="btn btn-primary" style="flex: 1.5; font-weight: 600;">Simpan Transaksi</button>
                                 </div>
                             </div>
+
+                            <!-- STEP 4: SUKSES -->
+                            <div class="ppob-step-group hidden" id="ppob-step-4" style="text-align: center; padding: 15px 0;">
+                                <div style="background: var(--success-glow); color: var(--success-color); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 28px; box-shadow: 0 4px 12px var(--success-glow);">
+                                    <i data-lucide="check-circle-2" style="width: 32px; height: 32px;"></i>
+                                </div>
+                                <h3 style="margin-bottom: 8px; font-size: 18px; font-weight: 700; color: var(--text-primary);">Transaksi Disimpan!</h3>
+                                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 24px; padding: 0 10px;">Transaksi PPOB & Jasa Keuangan telah berhasil dicatat ke dalam database lokal.</p>
+                                
+                                <input type="hidden" id="ppob-success-tx-id" value="">
+                                
+                                <div style="display: flex; flex-direction: column; gap: 10px; max-width: 280px; margin: 0 auto;">
+                                    <button type="button" class="btn btn-success btn-block" onclick="printPpobReceipt(document.getElementById('ppob-success-tx-id').value)" style="background: var(--success-color); color: white; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; padding: 10px;">
+                                        <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Cetak Struk
+                                    </button>
+                                    <button type="button" class="btn btn-secondary-outline btn-block" onclick="resetPpobWizard()" style="font-weight: 600; padding: 10px;">
+                                        Catat Transaksi Baru
+                                    </button>
+                                </div>
+                            </div>
                         </form>
                     </div>
 
@@ -962,6 +1014,7 @@
                                         <th>Admin</th>
                                         <th>Profit</th>
                                         <th>Status</th>
+                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ppob-table-body">
@@ -2122,7 +2175,118 @@
     <!-- Audio simulator helper for POS sound effects -->
     <div id="audio-container" style="display:none;"></div>
 
+    <!-- PPOB RECEIPT PREVIEW MODAL -->
+    <div class="modal" id="modal-ppob-receipt">
+        <div class="modal-dialog modal-small">
+            <div class="modal-content receipt-modal-content">
+                <div class="modal-header hide-on-print">
+                    <h3>Cetak Struk PPOB</h3>
+                    <button class="btn-close modal-close-btn" onclick="closePpobReceiptModal()"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Thermal Receipt -->
+                    <div class="thermal-receipt" id="printable-ppob-receipt">
+                        <div class="receipt-header">
+                            <div class="receipt-logo" style="margin-bottom: 6px;">
+                                <i data-lucide="wallet" style="width: 24px; height: 24px; color: #111;"></i>
+                            </div>
+                            <h2 class="receipt-store-name" id="ppob-rec-store-name" style="font-size: 18px; font-weight: bold; color: #000; margin: 4px 0 2px;">Kopi Senja</h2>
+                            <p class="receipt-store-tagline" id="ppob-rec-store-tagline" style="font-size: 10px; color: #555; margin: 0 0 4px;">Premium Cafe & Eatery</p>
+                            <p class="receipt-store-meta" id="ppob-rec-store-address" style="font-size: 9px; color: #666; margin: 0;">Jl. Boulevard Senopati No. 42</p>
+                            <p class="receipt-store-meta" id="ppob-rec-store-phone" style="font-size: 9px; color: #666; margin: 0;">Telp: +62 812-3456-7890</p>
+                        </div>
+                        
+                        <div class="receipt-divider" style="text-align: center; color: #000; margin: 8px 0; font-family: monospace;">------------------------------------------</div>
+                        
+                        <div class="receipt-meta-info" style="font-size: 11px; color: #000;">
+                            <div class="receipt-meta-row" style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                                <span>No. Transaksi:</span>
+                                <strong id="ppob-rec-tx-id">#PPOB-123456</strong>
+                            </div>
+                            <div class="receipt-meta-row" style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                                <span>Tanggal:</span>
+                                <span id="ppob-rec-date">28-06-2026 16:50</span>
+                            </div>
+                            <div class="receipt-meta-row" style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                                <span>Kasir:</span>
+                                <span id="ppob-rec-cashier">Administrator</span>
+                            </div>
+                        </div>
+                        
+                        <div class="receipt-divider" style="text-align: center; color: #000; margin: 8px 0; font-family: monospace;">------------------------------------------</div>
+                        
+                        <div class="receipt-meta-info" style="font-size: 11px; color: #000;">
+                            <div class="receipt-meta-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Layanan:</span>
+                                <strong id="ppob-rec-type" style="text-transform: uppercase;">PULSA & DATA</strong>
+                            </div>
+                            <div class="receipt-meta-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Provider/Bank:</span>
+                                <span id="ppob-rec-provider" style="text-transform: uppercase;">TELKOMSEL</span>
+                            </div>
+                            <div class="receipt-meta-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>No. HP/Tujuan:</span>
+                                <strong id="ppob-rec-target">08123456789</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Token Section (PLN only) -->
+                        <div id="ppob-rec-token-section" class="hidden" style="margin-top: 6px;">
+                            <div class="receipt-divider" style="text-align: center; color: #000; margin: 8px 0; font-family: monospace;">------------------------------------------</div>
+                            <div style="text-align: center; font-size: 11px; font-weight: bold; color: #000; margin-bottom: 4px;">TOKEN LISTRIK PLN</div>
+                            <div id="ppob-rec-token-box" style="border: 2px dashed #000; color: #000; padding: 12px; margin: 8px 0; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: bold; letter-spacing: 1px; background: transparent;">
+                                1234 - 5678 - 9012 - 3456 - 7890
+                            </div>
+                        </div>
+                        
+                        <div class="receipt-divider" style="text-align: center; color: #000; margin: 8px 0; font-family: monospace;">------------------------------------------</div>
+                        
+                        <div class="receipt-totals" style="font-size: 11px; color: #000;">
+                            <div class="receipt-total-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Nominal/Tagihan</span>
+                                <span id="ppob-rec-amount">Rp 0</span>
+                            </div>
+                            <div class="receipt-total-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Biaya Admin</span>
+                                <span id="ppob-rec-fee">Rp 0</span>
+                            </div>
+                            <div class="receipt-total-row hidden" id="ppob-rec-qris-surcharge-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <span>Surcharge QRIS</span>
+                                <span id="ppob-rec-qris-surcharge">Rp 0</span>
+                            </div>
+                            <div class="receipt-divider-small" style="text-align: right; color: #000; margin: 4px 0; font-family: monospace;">--------------------</div>
+                            <div class="receipt-total-row receipt-grand-total" style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; margin-top: 4px;">
+                                <span>TOTAL BAYAR:</span>
+                                <span id="ppob-rec-total-pay">Rp 0</span>
+                            </div>
+                            <div class="receipt-total-row" style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: #333;">
+                                <span>Metode Bayar</span>
+                                <span id="ppob-rec-payment-method">Tunai</span>
+                            </div>
+                        </div>
+                        
+                        <div class="receipt-divider" style="text-align: center; color: #000; margin: 8px 0; font-family: monospace;">------------------------------------------</div>
+                        
+                        <div class="receipt-footer" style="text-align: center; font-size: 10px; color: #000;">
+                            <p class="thanks-msg" style="margin: 0 0 4px; font-weight: 600;">Terima Kasih Atas Kunjungan Anda</p>
+                            <p style="margin: 0 0 2px;">Simpan struk ini sebagai bukti pembayaran sah.</p>
+                            <p class="powered-msg" style="font-size: 8px; color: #666; margin: 6px 0 0;">Powered by kasirKu POS</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer hide-on-print">
+                    <button class="btn btn-secondary-outline modal-close-btn" onclick="closePpobReceiptModal()">Tutup</button>
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i data-lucide="printer"></i>
+                        <span>Cetak Struk (Print)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+    <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
