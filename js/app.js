@@ -1838,6 +1838,18 @@ function drawReceiptBarcode(svgElement, text) {
 // --- Thermal Receipt Modal ---
 function openReceiptModal(order) {
     activeReceiptOrder = order;
+    
+    // Store Logo
+    const logoContainer = document.querySelector("#modal-receipt .receipt-logo");
+    if (logoContainer) {
+        if (settings.storeLogo) {
+            logoContainer.innerHTML = `<img src="${settings.storeLogo}" style="max-height: 48px; max-width: 120px; object-fit: contain; filter: grayscale(100%);">`;
+        } else {
+            logoContainer.innerHTML = `<i data-lucide="store" style="width: 24px; height: 24px; color: #111;"></i>`;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+
     document.getElementById("rec-store-name").textContent = settings.storeName;
     document.getElementById("rec-store-tagline").textContent = settings.tagline;
     document.getElementById("rec-store-address").textContent = settings.address;
@@ -2573,6 +2585,9 @@ function populateSettingsForm() {
     document.getElementById("set-store-address").value = settings.address;
     document.getElementById("set-store-phone").value = settings.phone;
     
+    // Preview store logo
+    updateStoreLogoPreview();
+    
     const elBusinessMode = document.getElementById("set-business-mode");
     if (elBusinessMode) elBusinessMode.value = settings.businessMode || "f&b";
     const elCurrency = document.getElementById("set-currency");
@@ -2633,6 +2648,21 @@ function handleStoreSettingsSubmit(e) {
     updateStoreInfoUI();
     sfx.playSuccess();
     alert("Profil Toko berhasil diperbarui!");
+}
+
+function updateStoreLogoPreview() {
+    const preview = document.getElementById("set-store-logo-preview");
+    const removeBtn = document.getElementById("btn-remove-store-logo");
+    if (preview) {
+        if (settings.storeLogo) {
+            preview.innerHTML = `<img src="${settings.storeLogo}" style="width: 100%; height: 100%; object-fit: contain;">`;
+            if (removeBtn) removeBtn.style.display = "block";
+        } else {
+            preview.innerHTML = `<i data-lucide="image" style="width: 20px; height: 20px; color: var(--text-secondary);"></i>`;
+            if (removeBtn) removeBtn.style.display = "none";
+            if (window.lucide) lucide.createIcons();
+        }
+    }
 }
 
 function handleSystemSettingsSubmit(e) {
@@ -3935,6 +3965,32 @@ function registerEventListeners() {
     document.getElementById("settings-system-form").addEventListener("submit", handleSystemSettingsSubmit);
     document.getElementById("reset-system-data").addEventListener("click", resetSystemData);
     
+    // Store Logo Uploader Listeners
+    const logoFileInput = document.getElementById("set-store-logo-file");
+    if (logoFileInput) {
+        logoFileInput.addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    settings.storeLogo = event.target.result;
+                    updateStoreLogoPreview();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    const removeLogoBtn = document.getElementById("btn-remove-store-logo");
+    if (removeLogoBtn) {
+        removeLogoBtn.addEventListener("click", function() {
+            settings.storeLogo = "";
+            const fileInput = document.getElementById("set-store-logo-file");
+            if (fileInput) fileInput.value = "";
+            updateStoreLogoPreview();
+        });
+    }
+    
     const gasForm = document.getElementById("settings-gas-form");
     if (gasForm) gasForm.addEventListener("submit", handleGasSettingsSubmit);
     
@@ -3963,7 +4019,28 @@ function registerEventListeners() {
     if (ppobCostInput) ppobCostInput.addEventListener("input", updatePpobLiveCalcs);
 
     const ppobPaymentInput = document.getElementById("ppob-payment");
-    if (ppobPaymentInput) ppobPaymentInput.addEventListener("change", updatePpobLiveCalcs);
+    if (ppobPaymentInput) {
+        ppobPaymentInput.addEventListener("change", function() {
+            const destGroup = document.getElementById("ppob-dest-account-group");
+            if (destGroup) {
+                if (this.value === "Tunai") {
+                    destGroup.classList.add("hidden");
+                } else {
+                    destGroup.classList.remove("hidden");
+                    // Set default destination account based on payment method
+                    const destSelect = document.getElementById("ppob-dest-account");
+                    if (destSelect) {
+                        if (this.value === "Transfer Bank") {
+                            destSelect.value = "brilink";
+                        } else if (this.value === "QRIS") {
+                            destSelect.value = "dana";
+                        }
+                    }
+                }
+            }
+            updatePpobLiveCalcs();
+        });
+    }
 
     // Toggle PLN token visibility based on type select change
     const ppobTypeSelect = document.getElementById("ppob-type");
@@ -5036,6 +5113,7 @@ function renderPpobDashboard() {
         else if (tx.type === "pln") { serviceLabel = "Token PLN"; badgeType = "badge-primary"; }
         
         const sourceAccName = ppobAccounts.find(a => a.id === tx.sourceAccountId)?.name || "Lokal";
+        const destAccName = ppobAccounts.find(a => a.id === tx.destAccountId)?.name || (tx.paymentMethod === "Tunai" ? "Kas Laci (Tunai)" : "Lokal");
         
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -5049,7 +5127,7 @@ function renderPpobDashboard() {
             </td>
             <td>
                 <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-primary);">${tx.target || "-"}</code>
-                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Akun: ${sourceAccName}</div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">${sourceAccName} &rarr; ${destAccName}</div>
             </td>
             <td style="font-weight: 600; color: var(--text-primary);">${formatPrice(tx.amount)}</td>
             <td style="color: var(--text-secondary);">
@@ -5087,14 +5165,46 @@ function renderPpobAccountsUI() {
     // Render lists of balances
     listContainer.innerHTML = "";
     ppobAccounts.forEach(acc => {
+        let bgGradient = "linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary))";
+        let iconBg = "var(--primary-glow)";
+        let iconColor = "var(--primary-color)";
+        let borderStyle = "border: 1px solid var(--border-color);";
+        
+        if (acc.id === "dana") {
+            bgGradient = "linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(14, 165, 233, 0.02))";
+            iconBg = "rgba(14, 165, 233, 0.2)";
+            iconColor = "#0ea5e9";
+            borderStyle = "border: 1px solid rgba(14, 165, 233, 0.25);";
+        } else if (acc.id === "ovo") {
+            bgGradient = "linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(168, 85, 247, 0.02))";
+            iconBg = "rgba(168, 85, 247, 0.2)";
+            iconColor = "#a855f7";
+            borderStyle = "border: 1px solid rgba(168, 85, 247, 0.25);";
+        } else if (acc.id === "brilink") {
+            bgGradient = "linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.02))";
+            iconBg = "rgba(59, 130, 246, 0.2)";
+            iconColor = "#3b82f6";
+            borderStyle = "border: 1px solid rgba(59, 130, 246, 0.25);";
+        } else if (acc.id === "mandiri") {
+            bgGradient = "linear-gradient(135deg, rgba(234, 179, 8, 0.12), rgba(234, 179, 8, 0.02))";
+            iconBg = "rgba(234, 179, 8, 0.2)";
+            iconColor = "#eab308";
+            borderStyle = "border: 1px solid rgba(234, 179, 8, 0.25);";
+        } else if (acc.id === "tunai") {
+            bgGradient = "linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.02))";
+            iconBg = "rgba(34, 197, 94, 0.2)";
+            iconColor = "#22c55e";
+            borderStyle = "border: 1px solid rgba(34, 197, 94, 0.25);";
+        }
+        
         const div = document.createElement("div");
-        div.style.cssText = "background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--card-shadow); transition: all 0.2s ease;";
+        div.style.cssText = `background: ${bgGradient}; ${borderStyle} border-radius: var(--border-radius-md); padding: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--card-shadow); transition: all 0.2s ease;`;
         div.innerHTML = `
             <div>
                 <span style="font-size: 11px; color: var(--text-secondary); display: block; font-weight: 600; text-transform: uppercase;">${acc.name}</span>
                 <strong style="font-size: 14px; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-weight: 700;">${formatPrice(acc.balance)}</strong>
             </div>
-            <div style="background: var(--primary-glow); color: var(--primary-color); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <div style="background: ${iconBg}; color: ${iconColor}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                 <i data-lucide="wallet" style="width: 14px; height: 14px;"></i>
             </div>
         `;
@@ -5105,13 +5215,16 @@ function renderPpobAccountsUI() {
     const sourceSelect = document.getElementById("ppob-source-account");
     if (sourceSelect) {
         const currentVal = sourceSelect.value;
-        sourceSelect.innerHTML = ppobAccounts.map(a => `<option value="${a.id}">${a.name} (${formatPrice(a.balance)})</option> font-size:12px;`).join("");
-        if (currentVal && ppobAccounts.some(a => a.id === currentVal)) {
-            sourceSelect.value = currentVal;
-        } else {
-            // default select
-            sourceSelect.value = ppobAccounts[0]?.id || "";
-        }
+        sourceSelect.innerHTML = ppobAccounts.map(a => `<option value="${a.id}">${a.name} (${formatPrice(a.balance)})</option>`).join("");
+        if (currentVal) sourceSelect.value = currentVal;
+    }
+
+    // Populate Destination Account Dropdown
+    const destSelect = document.getElementById("ppob-dest-account");
+    if (destSelect) {
+        const currentVal = destSelect.value;
+        destSelect.innerHTML = ppobAccounts.map(a => `<option value="${a.id}">${a.name} (${formatPrice(a.balance)})</option>`).join("");
+        if (currentVal) destSelect.value = currentVal;
     }
     
     // Populate Adjust Form selector
@@ -5484,10 +5597,11 @@ function handlePpobFormSubmit(e) {
     
     // Add customer payment to destination account
     let destAccId = "tunai"; // Cash drawer by default
-    if (paymentMethod === "Transfer Bank") {
-        destAccId = "mandiri"; // default bank deposit
-    } else if (paymentMethod === "QRIS") {
-        destAccId = "dana"; // default QRIS deposit account
+    if (paymentMethod !== "Tunai") {
+        const destSelect = document.getElementById("ppob-dest-account");
+        if (destSelect) {
+            destAccId = destSelect.value;
+        }
     }
     const destAcc = ppobAccounts.find(a => a.id === destAccId);
     if (destAcc) {
@@ -5507,6 +5621,7 @@ function handlePpobFormSubmit(e) {
         qrisSurcharge: qrisSurcharge,
         paymentMethod: paymentMethod,
         sourceAccountId: sourceAccountId,
+        destAccountId: destAccId,
         token: tokenVal
     };
     
@@ -5565,6 +5680,17 @@ function printPpobReceipt(txId) {
         return;
     }
     
+    // Store Logo
+    const logoContainer = document.querySelector("#modal-ppob-receipt .receipt-logo");
+    if (logoContainer) {
+        if (settings.storeLogo) {
+            logoContainer.innerHTML = `<img src="${settings.storeLogo}" style="max-height: 48px; max-width: 120px; object-fit: contain; filter: grayscale(100%);">`;
+        } else {
+            logoContainer.innerHTML = `<i data-lucide="wallet" style="width: 24px; height: 24px; color: #111;"></i>`;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+
     // Populate receipt header from settings
     document.getElementById("ppob-rec-store-name").textContent = settings.storeName || "kasirKu Store";
     document.getElementById("ppob-rec-store-tagline").textContent = settings.tagline || "";
@@ -5775,7 +5901,7 @@ function openGasCodeModal(e) {
     document.getElementById("modal-gas-code").classList.add("active");
     sfx.playBeep();
     
-    fetch("./google_apps_script.js")
+    fetch("./dev/google_apps_script.js")
         .then(response => {
             if (!response.ok) throw new Error("Gagal memuat file");
             return response.text();
