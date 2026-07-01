@@ -3713,3 +3713,111 @@ button.btn-close,
     font-weight: bold;
     letter-spacing: 1px;
 }
+
+/* --- Dynamic Outline Button Styling --- */
+.btn-primary-outline {
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: var(--primary-color);
+}
+.btn-primary-outline:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* --- Real-Time P&L Grid Responsiveness --- */
+.pl-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+/* --- Global Modal Scrollability --- */
+.modal-content {
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+/* --- PC, Tablet & Mobile Responsiveness Enhancements (Landscape & Portrait) --- */
+@media (max-width: 1024px) {
+    /* Stack layout splits on Tablet Portrait & Mobile */
+    .settings-grid, 
+    #page-ppob .settings-grid, 
+    #page-attendance .settings-grid,
+    .recipes-layout {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* KDS (Dapur) stack */
+    .kds-board {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Table grid layout */
+    #tables-grid-container {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    /* Wrap page headers vertically */
+    .page-header-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+    
+    .page-actions {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+    }
+    
+    .page-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* Metrics and P&L cards responsiveness */
+    .metrics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    .pl-summary-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .pl-summary-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .form-row, #page-ppob .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+}
+
+/* Low-height landscape devices optimization (short mobile/tablets) */
+@media (max-height: 500px) and (orientation: landscape) {
+    .sidebar {
+        overflow-y: auto !important;
+    }
+    .modal-content {
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+    }
+}
+
+/* Ensure mobile sidebar drawer is scrollable in portrait drawer mode too */
+@media (max-width: 600px) {
+    .sidebar {
+        overflow-y: auto !important;
+    }
+}

@@ -555,7 +555,7 @@
                         Visualisasi rincian pendapatan kotor, HPP (Harga Pokok Penjualan) berdasarkan resep produk, biaya operasional, dan margin laba bersih.
                     </p>
                     
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
+                    <div class="pl-summary-grid" style="margin-bottom: 20px;">
                         <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px;">
                             <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Pendapatan Kotor</span>
                             <strong id="pl-revenue" style="font-size: 16px; color: var(--text-primary);">Rp 0</strong>
@@ -756,7 +756,7 @@
                     </div>
                 </div>
                 
-                <div class="analytics-summary-cards" style="margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                <div class="analytics-summary-cards metrics-grid" style="margin-bottom: 24px;">
                     <div class="metric-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--card-shadow);">
                         <div class="metric-info">
                             <span class="metric-label" style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 8px;">Total Perputaran Uang</span>
@@ -985,12 +985,15 @@
                                 <i data-lucide="wallet" style="color: var(--primary-color);"></i>
                                 <h3 style="margin: 0; font-size: 16px;">Saldo Akun Finansial</h3>
                             </div>
-                            <div style="display: flex; gap: 8px;">
-                                <button type="button" class="btn btn-sm btn-secondary-outline" onclick="openPpobBalanceModal('transfer')" style="font-size: 11px; padding: 4px 8px;">
-                                    <i data-lucide="arrow-left-right" style="width: 12px; height: 12px; margin-right: 4px; display: inline-block; vertical-align: middle;"></i>Transfer Saldo
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-sm btn-success" onclick="openAddPpobAccountModal()" style="font-size: 11px; padding: 4px 8px; display: flex; align-items: center; gap: 4px;">
+                                    <i data-lucide="plus" style="width: 12px; height: 12px;"></i> Tambah Akun
                                 </button>
-                                <button type="button" class="btn btn-sm btn-primary-outline" onclick="openPpobBalanceModal('adjust')" style="font-size: 11px; padding: 4px 8px;">
-                                    <i data-lucide="settings" style="width: 12px; height: 12px; margin-right: 4px; display: inline-block; vertical-align: middle;"></i>Kelola
+                                <button type="button" class="btn btn-sm btn-secondary" onclick="openPpobBalanceModal('transfer')" style="font-size: 11px; padding: 4px 8px; display: flex; align-items: center; gap: 4px;">
+                                    <i data-lucide="arrow-left-right" style="width: 12px; height: 12px;"></i> Transfer
+                                </button>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="openPpobBalanceModal('adjust')" style="font-size: 11px; padding: 4px 8px; display: flex; align-items: center; gap: 4px;">
+                                    <i data-lucide="settings" style="width: 12px; height: 12px;"></i> Kelola
                                 </button>
                             </div>
                         </div>
@@ -2044,6 +2047,36 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary modal-close-btn">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Tambah Akun PPOB Baru -->
+    <div class="modal" id="modal-ppob-add-account">
+        <div class="modal-dialog modal-small" style="max-width: 400px;">
+            <div class="modal-content" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 24px; position: relative;">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                    <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="plus-circle" style="color: var(--success-color);"></i> Tambah Akun Finansial
+                    </h3>
+                    <button class="btn-close modal-close-btn" onclick="closeAddPpobAccountModal()"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="ppob-add-account-form" onsubmit="handlePpobAddAccount(event)">
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label for="add-acc-name" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Nama Akun / Bank*</label>
+                            <input type="text" id="add-acc-name" placeholder="Contoh: Saldo Gopay, Bank BCA" required style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="add-acc-balance" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-secondary);">Saldo Awal (Rp)*</label>
+                            <input type="number" id="add-acc-balance" value="0" min="0" required style="width: 100%; padding: 10px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary);">
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button type="button" class="btn btn-secondary-outline" onclick="closeAddPpobAccountModal()" style="padding: 8px 16px;">Batal</button>
+                            <button type="submit" class="btn btn-primary" style="padding: 8px 16px;">Tambah Akun</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

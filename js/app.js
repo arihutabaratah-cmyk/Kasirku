@@ -5780,6 +5780,49 @@ function closePpobReceiptModal() {
     }
 }
 
+function openAddPpobAccountModal() {
+    const modal = document.getElementById("modal-ppob-add-account");
+    if (modal) {
+        modal.classList.add("active");
+        document.getElementById("add-acc-name").value = "";
+        document.getElementById("add-acc-balance").value = 0;
+    }
+    sfx.playBeep();
+}
+
+function closeAddPpobAccountModal() {
+    const modal = document.getElementById("modal-ppob-add-account");
+    if (modal) modal.classList.remove("active");
+}
+
+function handlePpobAddAccount(e) {
+    e.preventDefault();
+    const nameInput = document.getElementById("add-acc-name");
+    const balanceInput = document.getElementById("add-acc-balance");
+    if (!nameInput || !balanceInput) return;
+
+    const name = nameInput.value.trim();
+    const balance = parseFloat(balanceInput.value) || 0;
+
+    if (!name) {
+        alert("Nama akun tidak boleh kosong!");
+        return;
+    }
+
+    const id = "acc-" + Date.now();
+    ppobAccounts.push({
+        id: id,
+        name: name,
+        balance: balance
+    });
+
+    savePpobAccountsToStorage();
+    renderPpobAccountsUI();
+    closeAddPpobAccountModal();
+    sfx.playSuccess();
+    showSyncToast("Akun baru berhasil ditambahkan!");
+}
+
 function resetPpobWizard() {
     // Clear forms
     document.getElementById("ppob-transaction-form").reset();
@@ -5991,6 +6034,9 @@ window.printPpobReceipt = printPpobReceipt;
 window.closePpobReceiptModal = closePpobReceiptModal;
 window.resetPpobWizard = resetPpobWizard;
 window.processOcrImage = processOcrImage;
+window.openAddPpobAccountModal = openAddPpobAccountModal;
+window.closeAddPpobAccountModal = closeAddPpobAccountModal;
+window.handlePpobAddAccount = handlePpobAddAccount;
 
 // --- Mobile Layout Helpers ---
 function openSidebar() {
