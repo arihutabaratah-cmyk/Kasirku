@@ -5826,57 +5826,59 @@ function handlePpobAddAccount(e) {
     showSyncToast("Akun baru berhasil ditambahkan!");
 }
 
-function sendPpobReceiptToWhatsApp() {
-    if (!activePpobReceiptTx) return;
-    sfx.playBeep();
-    
-    // Format text message
+function formatPpobReceiptText(tx) {
     let text = `*${settings.storeName}*\n`;
     if (settings.tagline) text += `${settings.tagline}\n`;
     if (settings.address) text += `${settings.address}\n`;
     if (settings.phone) text += `Telp: ${settings.phone}\n`;
     text += `------------------------------------------\n`;
     text += `*STRUK BUKTI PEMBAYARAN PPOB*\n`;
-    text += `No. Transaksi: #${activePpobReceiptTx.id}\n`;
-    text += `Tanggal: ${new Date(activePpobReceiptTx.timestamp).toLocaleString("id-ID")}\n`;
+    text += `No. Transaksi: #${tx.id}\n`;
+    text += `Tanggal: ${new Date(tx.timestamp).toLocaleString("id-ID")}\n`;
     text += `Kasir: ${activeUser === "owner" ? "Owner (Admin)" : "Staff"}\n`;
     
     let serviceLabel = "PPOB";
-    if (activePpobReceiptTx.type === "ewallet") serviceLabel = "Top Up E-Wallet";
-    else if (activePpobReceiptTx.type === "transfer") serviceLabel = "Transfer Bank";
-    else if (activePpobReceiptTx.type === "tarik") serviceLabel = "Tarik Tunai";
-    else if (activePpobReceiptTx.type === "pulsa") serviceLabel = "Pulsa / Paket Data";
-    else if (activePpobReceiptTx.type === "pln") serviceLabel = "Listrik PLN";
-    else if (activePpobReceiptTx.type === "lainnya") serviceLabel = "Tagihan Lainnya";
+    if (tx.type === "ewallet") serviceLabel = "Top Up E-Wallet";
+    else if (tx.type === "transfer") serviceLabel = "Transfer Bank";
+    else if (tx.type === "tarik") serviceLabel = "Tarik Tunai";
+    else if (tx.type === "pulsa") serviceLabel = "Pulsa / Paket Data";
+    else if (tx.type === "pln") serviceLabel = "Listrik PLN";
+    else if (tx.type === "lainnya") serviceLabel = "Tagihan Lainnya";
 
     text += `Layanan: ${serviceLabel}\n`;
-    text += `Penyedia/Bank: ${activePpobReceiptTx.provider || ''}\n`;
-    text += `No. HP/Tujuan: ${activePpobReceiptTx.target || '-'}\n`;
+    text += `Penyedia/Bank: ${tx.provider || ''}\n`;
+    text += `No. HP/Tujuan: ${tx.target || '-'}\n`;
     
-    if (activePpobReceiptTx.type === "pln" && activePpobReceiptTx.token) {
+    if (tx.type === "pln" && tx.token) {
         text += `------------------------------------------\n`;
         text += `*TOKEN LISTRIK PLN:*\n`;
-        text += `\`${activePpobReceiptTx.token}\`\n`;
+        text += `\`${tx.token}\`\n`;
     }
     
     text += `------------------------------------------\n`;
-    text += `Nominal: ${formatPrice(activePpobReceiptTx.amount || 0)}\n`;
-    text += `Biaya Admin: ${formatPrice(activePpobReceiptTx.fee || 0)}\n`;
+    text += `Nominal: ${formatPrice(tx.amount || 0)}\n`;
+    text += `Biaya Admin: ${formatPrice(tx.fee || 0)}\n`;
     
-    const surchargeVal = activePpobReceiptTx.qrisSurcharge || 0;
+    const surchargeVal = tx.qrisSurcharge || 0;
     if (surchargeVal > 0) {
         text += `Surcharge QRIS: ${formatPrice(surchargeVal)}\n`;
     }
     
-    const totalPay = (activePpobReceiptTx.amount || 0) + (activePpobReceiptTx.fee || 0) + surchargeVal;
+    const totalPay = (tx.amount || 0) + (tx.fee || 0) + surchargeVal;
     text += `*TOTAL BAYAR: ${formatPrice(totalPay)}*\n`;
-    text += `Metode Bayar: ${activePpobReceiptTx.paymentMethod || 'Tunai'}\n`;
+    text += `Metode Bayar: ${tx.paymentMethod || 'Tunai'}\n`;
     text += `Status: BERHASIL\n`;
     text += `------------------------------------------\n`;
     text += `Terima Kasih atas Kepercayaan Anda!\n`;
     text += `Powered by kasirKu POS`;
+    return text;
+}
 
-    // Prompt user for customer's WhatsApp number
+function sendPpobReceiptToWhatsApp() {
+    if (!activePpobReceiptTx) return;
+    sfx.playBeep();
+    
+    const text = formatPpobReceiptText(activePpobReceiptTx);
     const phoneInput = prompt("Masukkan nomor WhatsApp pelanggan (contoh: 628123456789 atau 08123456789):", activePpobReceiptTx.target || "");
     if (phoneInput === null) return; // Cancelled
     
@@ -5885,8 +5887,44 @@ function sendPpobReceiptToWhatsApp() {
         cleanPhone = "62" + cleanPhone.slice(1);
     }
     
-    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
+    const waUrl = cleanPhone 
+        ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        
     window.open(waUrl, "_blank");
+}
+
+function sharePpobReceipt() {
+    if (!activePpobReceiptTx) return;
+    sfx.playBeep();
+    const text = formatPpobReceiptText(activePpobReceiptTx);
+    
+    if (navigator.share) {
+        navigator.share({
+            title: `Struk PPOB #${activePpobReceiptTx.id}`,
+            text: text
+        }).then(() => {
+            showSyncToast("Struk PPOB berhasil dibagikan!");
+        }).catch(err => {
+            console.error("Web Share Error:", err);
+        });
+    } else {
+        copyPpobReceiptText();
+    }
+}
+
+function copyPpobReceiptText() {
+    if (!activePpobReceiptTx) return;
+    sfx.playBeep();
+    const text = formatPpobReceiptText(activePpobReceiptTx);
+    
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Teks struk PPOB berhasil disalin ke clipboard!");
+        showSyncToast("Struk disalin!");
+    }).catch(err => {
+        console.error("Clipboard Error:", err);
+        alert("Gagal menyalin struk ke clipboard.");
+    });
 }
 
 function resetPpobWizard() {
@@ -6104,6 +6142,10 @@ window.openAddPpobAccountModal = openAddPpobAccountModal;
 window.closeAddPpobAccountModal = closeAddPpobAccountModal;
 window.handlePpobAddAccount = handlePpobAddAccount;
 window.sendPpobReceiptToWhatsApp = sendPpobReceiptToWhatsApp;
+window.shareReceipt = shareReceipt;
+window.copyReceiptText = copyReceiptText;
+window.sharePpobReceipt = sharePpobReceipt;
+window.copyPpobReceiptText = copyPpobReceiptText;
 
 // --- Mobile Layout Helpers ---
 function openSidebar() {
@@ -6705,22 +6747,19 @@ function renderAuditLogs() {
 
 let activeReceiptOrder = null;
 
-function sendReceiptToWhatsApp() {
-    if (!activeReceiptOrder) return;
-    sfx.playBeep();
-    
-    // Format text message
+function formatReceiptText(order) {
     let text = `*${settings.storeName}*\n`;
-    text += `${settings.tagline || ''}\n`;
-    text += `${settings.address || ''}\n`;
-    text += `Telp: ${settings.phone || ''}\n`;
+    if (settings.tagline) text += `${settings.tagline}\n`;
+    if (settings.address) text += `${settings.address}\n`;
+    if (settings.phone) text += `Telp: ${settings.phone}\n`;
     text += `------------------------------------------\n`;
-    text += `ID Transaksi: #${activeReceiptOrder.id}\n`;
-    text += `Waktu: ${new Date(activeReceiptOrder.date).toLocaleString("id-ID")}\n`;
-    text += `Pelanggan: ${activeReceiptOrder.customer}\n`;
+    text += `ID Transaksi: #${order.id}\n`;
+    text += `Waktu: ${new Date(order.date).toLocaleString("id-ID")}\n`;
+    text += `Pelanggan: ${order.customer}\n`;
+    text += `Kasir: ${activeUser === "owner" ? "Owner (Admin)" : "Staff"}\n`;
     text += `------------------------------------------\n`;
     
-    activeReceiptOrder.items.forEach(item => {
+    order.items.forEach(item => {
         let modifierPriceSum = 0;
         let modifierDetails = [];
         if (item.selectedModifiers && item.selectedModifiers.length > 0) {
@@ -6738,41 +6777,90 @@ function sendReceiptToWhatsApp() {
     });
     
     text += `------------------------------------------\n`;
-    text += `Subtotal: ${formatPrice(activeReceiptOrder.subtotal)}\n`;
-    if (activeReceiptOrder.discount > 0) {
-        text += `Diskon: -${formatPrice(activeReceiptOrder.discount)}\n`;
+    text += `Subtotal: ${formatPrice(order.subtotal)}\n`;
+    if (order.discount > 0) {
+        text += `Diskon: -${formatPrice(order.discount)}\n`;
     }
-    if (activeReceiptOrder.serviceCharge > 0) {
-        text += `Biaya Layanan: ${formatPrice(activeReceiptOrder.serviceCharge)}\n`;
+    if (order.serviceCharge > 0) {
+        text += `Biaya Layanan: ${formatPrice(order.serviceCharge)}\n`;
     }
-    if (activeReceiptOrder.tax > 0) {
-        text += `Pajak: ${formatPrice(activeReceiptOrder.tax)}\n`;
+    if (order.tax > 0) {
+        text += `Pajak: ${formatPrice(order.tax)}\n`;
     }
-    if (activeReceiptOrder.roundingAdjustment !== 0) {
-        text += `Pembulatan: ${formatPrice(activeReceiptOrder.roundingAdjustment)}\n`;
+    if (order.roundingAdjustment !== 0) {
+        text += `Pembulatan: ${formatPrice(order.roundingAdjustment)}\n`;
     }
-    text += `*TOTAL AKHIR: ${formatPrice(activeReceiptOrder.total)}*\n`;
-    text += `Metode Bayar: ${activeReceiptOrder.paymentMethod}\n`;
-    text += `Bayar: ${formatPrice(activeReceiptOrder.amountPaid)}\n`;
-    text += `Kembalian: ${formatPrice(activeReceiptOrder.change)}\n`;
+    text += `*TOTAL AKHIR: ${formatPrice(order.total)}*\n`;
+    text += `Metode Bayar: ${order.paymentMethod}\n`;
+    text += `Bayar: ${formatPrice(order.amountPaid)}\n`;
+    text += `Kembalian: ${formatPrice(order.change)}\n`;
     text += `------------------------------------------\n`;
     text += `Terima Kasih atas Kunjungan Anda!\n`;
     text += `Powered by kasirKu POS`;
+    return text;
+}
 
-    // Prompt user for customer's WhatsApp number (optional, e.g. starting with 62 or 08)
-    const phoneInput = prompt("Masukkan nomor WhatsApp pelanggan (contoh: 628123456789 atau 08123456789):", "");
+function sendReceiptToWhatsApp() {
+    if (!activeReceiptOrder) return;
+    sfx.playBeep();
+    
+    const text = formatReceiptText(activeReceiptOrder);
+    
+    // Check if customer is a member
+    let defaultPhone = "";
+    if (activeReceiptOrder.customer && activeReceiptOrder.customer !== "Pelanggan Umum") {
+        const member = crmMembers.find(m => m.name === activeReceiptOrder.customer);
+        if (member && member.phone) {
+            defaultPhone = member.phone;
+        }
+    }
+    
+    const phoneInput = prompt("Masukkan nomor WhatsApp pelanggan (contoh: 628123456789 atau 08123456789):", defaultPhone);
     if (phoneInput === null) return; // Cancelled
     
     let cleanPhone = phoneInput.replace(/[^0-9]/g, "");
     if (cleanPhone.startsWith("0")) {
         cleanPhone = "62" + cleanPhone.slice(1);
     }
-    if (!cleanPhone) {
-        cleanPhone = ""; // Send to general chat selection
-    }
     
-    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
+    const waUrl = cleanPhone 
+        ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        
     window.open(waUrl, "_blank");
+}
+
+function shareReceipt() {
+    if (!activeReceiptOrder) return;
+    sfx.playBeep();
+    const text = formatReceiptText(activeReceiptOrder);
+    
+    if (navigator.share) {
+        navigator.share({
+            title: `Struk #${activeReceiptOrder.id}`,
+            text: text
+        }).then(() => {
+            showSyncToast("Struk berhasil dibagikan!");
+        }).catch(err => {
+            console.error("Web Share Error:", err);
+        });
+    } else {
+        copyReceiptText();
+    }
+}
+
+function copyReceiptText() {
+    if (!activeReceiptOrder) return;
+    sfx.playBeep();
+    const text = formatReceiptText(activeReceiptOrder);
+    
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Teks struk berhasil disalin ke clipboard!");
+        showSyncToast("Struk disalin!");
+    }).catch(err => {
+        console.error("Clipboard Error:", err);
+        alert("Gagal menyalin struk.");
+    });
 }
 
 function downloadCSV(csvContent, fileName) {

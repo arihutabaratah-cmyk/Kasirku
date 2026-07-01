@@ -2445,7 +2445,8 @@ textarea {
 
     /* Main Workspace height adjustment */
     .main-content {
-        width: 100vw;
+        width: 100% !important;
+        max-width: 100% !important;
         height: calc(100vh - 56px);
         padding: 12px;
         overflow-y: auto;
@@ -2458,8 +2459,10 @@ textarea {
     }
 
     .catalog-panel {
-        display: block;
-        width: 100%;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
     }
 
     /* When cart view is active, toggle panels */
@@ -2557,9 +2560,11 @@ textarea {
 
     /* Catalog grid card sizes */
     .catalog-grid {
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
-        gap: 12px;
-        padding-bottom: 80px; /* Space for sticky cart footer */
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+        gap: 12px !important;
+        padding-bottom: 80px !important; /* Space for sticky cart footer */
+        height: auto !important;
+        overflow-y: visible !important;
     }
 
     .product-card {
@@ -3731,6 +3736,17 @@ button.btn-close,
     background: rgba(99, 102, 241, 0.2);
     border-color: var(--primary-color);
     color: var(--primary-color);
+}
+
+.btn-info-outline {
+    background: rgba(14, 165, 233, 0.08);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    color: #0ea5e9;
+}
+.btn-info-outline:hover:not(:disabled) {
+    background: rgba(14, 165, 233, 0.2);
+    border-color: #0ea5e9;
+    color: #0ea5e9;
 }
 
 /* --- Real-Time P&L Grid Responsiveness --- */

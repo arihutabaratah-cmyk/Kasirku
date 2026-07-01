@@ -1670,17 +1670,25 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer hide-on-print">
+                <div class="modal-footer hide-on-print" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
                     <button class="btn btn-success-outline" id="whatsapp-receipt-btn" onclick="sendReceiptToWhatsApp()" style="border-color: #25d366; color: #25d366; background: rgba(37, 211, 102, 0.05); display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
                         <i data-lucide="message-circle" style="width: 16px; height: 16px;"></i>
                         <span>Kirim WA</span>
                     </button>
-                    <button class="btn btn-secondary-outline" id="print-receipt-btn">
-                        <i data-lucide="printer"></i>
-                        <span>Cetak Struk (Print)</span>
+                    <button class="btn btn-info-outline" onclick="shareReceipt()" style="border-color: #0ea5e9; color: #0ea5e9; background: rgba(14, 165, 233, 0.05); display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                        <i data-lucide="share-2" style="width: 16px; height: 16px;"></i>
+                        <span>Bagikan</span>
                     </button>
-                    <button class="btn btn-primary modal-close-btn" id="finish-transaction-btn">
-                        <i data-lucide="check-circle-2"></i>
+                    <button class="btn btn-secondary-outline" onclick="copyReceiptText()" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <i data-lucide="copy" style="width: 16px; height: 16px;"></i>
+                        <span>Salin</span>
+                    </button>
+                    <button class="btn btn-secondary-outline" id="print-receipt-btn" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
+                        <span>Print</span>
+                    </button>
+                    <button class="btn btn-primary modal-close-btn" id="finish-transaction-btn" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i>
                         <span>Transaksi Baru</span>
                     </button>
                 </div>
@@ -2333,9 +2341,17 @@
                         <i data-lucide="send" style="width: 16px; height: 16px;"></i>
                         <span>Kirim WA</span>
                     </button>
+                    <button class="btn btn-info-outline" onclick="sharePpobReceipt()" style="border-color: #0ea5e9; color: #0ea5e9; background: rgba(14, 165, 233, 0.05); display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                        <i data-lucide="share-2" style="width: 16px; height: 16px;"></i>
+                        <span>Bagikan</span>
+                    </button>
+                    <button class="btn btn-secondary-outline" onclick="copyPpobReceiptText()" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <i data-lucide="copy" style="width: 16px; height: 16px;"></i>
+                        <span>Salin</span>
+                    </button>
                     <button class="btn btn-primary" onclick="window.print()" style="display: inline-flex; align-items: center; gap: 6px;">
                         <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
-                        <span>Cetak Struk (Print)</span>
+                        <span>Print</span>
                     </button>
                 </div>
             </div>
