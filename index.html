@@ -786,7 +786,7 @@
                     </div>
                 </div>
 
-                <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                <div class="settings-grid settings-grid-asymmetric">
                     <!-- Column 1: Record form -->
                     <div class="settings-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 24px;">
                         <div class="settings-card-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
@@ -1045,7 +1045,7 @@
                     </div>
                 </div>
 
-                <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                <div class="settings-grid settings-grid-asymmetric">
                     <!-- Column 1: Control Panel -->
                     <div class="settings-card" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 24px;">
                         <div class="settings-card-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
@@ -2327,10 +2327,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer hide-on-print">
+                <div class="modal-footer hide-on-print" style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
                     <button class="btn btn-secondary-outline modal-close-btn" onclick="closePpobReceiptModal()">Tutup</button>
-                    <button class="btn btn-primary" onclick="window.print()">
-                        <i data-lucide="printer"></i>
+                    <button class="btn btn-success-outline" id="ppob-whatsapp-receipt-btn" onclick="sendPpobReceiptToWhatsApp()" style="border-color: #25d366; color: #25d366; background: rgba(37, 211, 102, 0.05); display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                        <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+                        <span>Kirim WA</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="window.print()" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
                         <span>Cetak Struk (Print)</span>
                     </button>
                 </div>

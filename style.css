@@ -1324,6 +1324,12 @@ textarea {
     gap: 20px;
 }
 
+.settings-grid-asymmetric {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 20px;
+}
+
 .settings-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -2085,7 +2091,8 @@ textarea {
     body {
         background: #ffffff !important;
         color: #000000 !important;
-        width: 80mm;
+        width: 100% !important;
+        max-width: 80mm !important;
         height: auto;
         margin: 0;
         padding: 0;
@@ -2123,7 +2130,7 @@ textarea {
         position: absolute;
         left: 0;
         top: 0;
-        width: 80mm !important;
+        width: 100% !important;
         max-width: 80mm !important;
         box-shadow: none !important;
         padding: 8mm 6mm !important;
@@ -2277,8 +2284,8 @@ textarea {
     }
 }
 
-/* Mobile Screens (max-width: 600px) */
-@media (max-width: 600px) {
+/* Mobile & Tablet Screens (max-width: 992px) */
+@media (max-width: 992px) {
     /* Hide desktop top utility bar */
     .top-utility-bar {
         display: none !important;
@@ -3743,6 +3750,7 @@ button.btn-close,
 @media (max-width: 1024px) {
     /* Stack layout splits on Tablet Portrait & Mobile */
     .settings-grid, 
+    .settings-grid-asymmetric,
     #page-ppob .settings-grid, 
     #page-attendance .settings-grid,
     .recipes-layout {
@@ -3791,6 +3799,27 @@ button.btn-close,
     .pl-summary-grid {
         grid-template-columns: repeat(2, 1fr) !important;
     }
+
+    /* Wrap catalog panel header on mobile/tablet */
+    .panel-header {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+    
+    .panel-header .header-actions {
+        display: flex;
+        width: 100%;
+        gap: 8px;
+    }
+    
+    .panel-header .header-actions .btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 11px !important;
+        padding: 0 8px !important;
+        height: 42px !important;
+    }
 }
 
 @media (max-width: 480px) {
@@ -3816,7 +3845,7 @@ button.btn-close,
 }
 
 /* Ensure mobile sidebar drawer is scrollable in portrait drawer mode too */
-@media (max-width: 600px) {
+@media (max-width: 992px) {
     .sidebar {
         overflow-y: auto !important;
     }

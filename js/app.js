@@ -5684,12 +5684,15 @@ function clearPpobTransactions() {
     }
 }
 
+let activePpobReceiptTx = null;
+
 function printPpobReceipt(txId) {
     const tx = ppobTransactions.find(t => t.id === txId);
     if (!tx) {
         alert("Transaksi tidak ditemukan!");
         return;
     }
+    activePpobReceiptTx = tx;
     
     // Store Logo
     const logoContainer = document.querySelector("#modal-ppob-receipt .receipt-logo");
@@ -5821,6 +5824,69 @@ function handlePpobAddAccount(e) {
     closeAddPpobAccountModal();
     sfx.playSuccess();
     showSyncToast("Akun baru berhasil ditambahkan!");
+}
+
+function sendPpobReceiptToWhatsApp() {
+    if (!activePpobReceiptTx) return;
+    sfx.playBeep();
+    
+    // Format text message
+    let text = `*${settings.storeName}*\n`;
+    if (settings.tagline) text += `${settings.tagline}\n`;
+    if (settings.address) text += `${settings.address}\n`;
+    if (settings.phone) text += `Telp: ${settings.phone}\n`;
+    text += `------------------------------------------\n`;
+    text += `*STRUK BUKTI PEMBAYARAN PPOB*\n`;
+    text += `No. Transaksi: #${activePpobReceiptTx.id}\n`;
+    text += `Tanggal: ${new Date(activePpobReceiptTx.timestamp).toLocaleString("id-ID")}\n`;
+    text += `Kasir: ${activeUser === "owner" ? "Owner (Admin)" : "Staff"}\n`;
+    
+    let serviceLabel = "PPOB";
+    if (activePpobReceiptTx.type === "ewallet") serviceLabel = "Top Up E-Wallet";
+    else if (activePpobReceiptTx.type === "transfer") serviceLabel = "Transfer Bank";
+    else if (activePpobReceiptTx.type === "tarik") serviceLabel = "Tarik Tunai";
+    else if (activePpobReceiptTx.type === "pulsa") serviceLabel = "Pulsa / Paket Data";
+    else if (activePpobReceiptTx.type === "pln") serviceLabel = "Listrik PLN";
+    else if (activePpobReceiptTx.type === "lainnya") serviceLabel = "Tagihan Lainnya";
+
+    text += `Layanan: ${serviceLabel}\n`;
+    text += `Penyedia/Bank: ${activePpobReceiptTx.provider || ''}\n`;
+    text += `No. HP/Tujuan: ${activePpobReceiptTx.target || '-'}\n`;
+    
+    if (activePpobReceiptTx.type === "pln" && activePpobReceiptTx.token) {
+        text += `------------------------------------------\n`;
+        text += `*TOKEN LISTRIK PLN:*\n`;
+        text += `\`${activePpobReceiptTx.token}\`\n`;
+    }
+    
+    text += `------------------------------------------\n`;
+    text += `Nominal: ${formatPrice(activePpobReceiptTx.amount || 0)}\n`;
+    text += `Biaya Admin: ${formatPrice(activePpobReceiptTx.fee || 0)}\n`;
+    
+    const surchargeVal = activePpobReceiptTx.qrisSurcharge || 0;
+    if (surchargeVal > 0) {
+        text += `Surcharge QRIS: ${formatPrice(surchargeVal)}\n`;
+    }
+    
+    const totalPay = (activePpobReceiptTx.amount || 0) + (activePpobReceiptTx.fee || 0) + surchargeVal;
+    text += `*TOTAL BAYAR: ${formatPrice(totalPay)}*\n`;
+    text += `Metode Bayar: ${activePpobReceiptTx.paymentMethod || 'Tunai'}\n`;
+    text += `Status: BERHASIL\n`;
+    text += `------------------------------------------\n`;
+    text += `Terima Kasih atas Kepercayaan Anda!\n`;
+    text += `Powered by kasirKu POS`;
+
+    // Prompt user for customer's WhatsApp number
+    const phoneInput = prompt("Masukkan nomor WhatsApp pelanggan (contoh: 628123456789 atau 08123456789):", activePpobReceiptTx.target || "");
+    if (phoneInput === null) return; // Cancelled
+    
+    let cleanPhone = phoneInput.replace(/[^0-9]/g, "");
+    if (cleanPhone.startsWith("0")) {
+        cleanPhone = "62" + cleanPhone.slice(1);
+    }
+    
+    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
+    window.open(waUrl, "_blank");
 }
 
 function resetPpobWizard() {
@@ -6037,6 +6103,7 @@ window.processOcrImage = processOcrImage;
 window.openAddPpobAccountModal = openAddPpobAccountModal;
 window.closeAddPpobAccountModal = closeAddPpobAccountModal;
 window.handlePpobAddAccount = handlePpobAddAccount;
+window.sendPpobReceiptToWhatsApp = sendPpobReceiptToWhatsApp;
 
 // --- Mobile Layout Helpers ---
 function openSidebar() {
